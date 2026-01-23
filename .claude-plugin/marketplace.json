@@ -1,5 +1,8 @@
 {
   "name": "codebase-analyzer-marketplace",
+  "source": {
+    "url": "git@github.com:fblissjr/codebase-analyzer.git"
+  },
   "owner": {
     "name": "fblissjr",
     "url": "https://github.com/fblissjr"
