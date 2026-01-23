@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SKILL.md YAML frontmatter with `name` and `description` fields (required for automatic skill triggering)
 - `.claude-plugin/marketplace.json` for GitHub-based plugin distribution
 - Installation scope table in docs/usage.md
+- Comprehensive "Subagents and Composability" documentation section:
+  - Trigger phrases for automatic activation
+  - Subagent patterns (parallel analysis, fan-out/fan-in, pipeline composition)
+  - Integration with implementation workflows (planning, during, post)
+  - Plan templates (feature implementation, refactoring, documentation generation, code audit)
+  - Composing with other tools (test runners, doc generators, code review, security scanners)
+  - Multi-agent coordination patterns (leader-worker, verification chain, competitive analysis)
+  - Full workflow example with multiple subagents
 
 ### Changed
 

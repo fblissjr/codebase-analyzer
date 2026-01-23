@@ -259,6 +259,302 @@ The real power is chaining analysis tasks together conversationally:
 
 > "Find all the Click commands, trace their imports, and summarize what each command actually does."
 
+## Subagents and Composability
+
+Codebase-analyzer is designed to work with Claude's subagent system for parallel processing, plan-based workflows, and integration with other tools.
+
+### Trigger Phrases for Automatic Activation
+
+These phrases match the skill description and activate it automatically:
+
+| Intent | Trigger Phrases |
+|--------|-----------------|
+| **Trace dependencies** | "trace imports from", "trace the dependency graph", "follow the import chain" |
+| **Verify implementation** | "verify code does what", "confirm the implementation", "validate the code matches" |
+| **Audit code** | "audit untrusted code", "analyze without executing", "check what this actually does" |
+| **Document exhaustively** | "document how code works from", "trace down from entry point", "exhaustively analyze" |
+| **Compare implementations** | "compare against reference", "diff the implementations", "what's different between" |
+| **Find entry points** | "find all entry points", "where does execution start", "find CLI commands" |
+
+---
+
+### Subagent Patterns
+
+#### Parallel Analysis
+
+Spawn multiple subagents to analyze different parts of the codebase simultaneously:
+
+> "Spawn subagents to analyze each entry point in parallel"
+
+> "Use parallel subagents to document every module in the dependency tree"
+
+> "Fork analysis across all CLI commands and summarize findings"
+
+> "Trace each of the 5 entry points concurrently and report shared dependencies"
+
+#### Fan-Out / Fan-In
+
+Distribute work across subagents, then consolidate results:
+
+> "Find all entry points, spawn a subagent for each to trace imports, then summarize which modules are shared vs unique"
+
+> "Trace from main.py, identify the 10 core modules, spawn subagents to document each, then compile into architecture doc"
+
+#### Pipeline Composition
+
+Chain analysis steps where output of one feeds the next:
+
+> "Trace imports -> identify external dependencies -> check each for security advisories"
+
+> "Find entry points -> trace each -> compare traces -> identify dead code"
+
+> "Analyze structure -> find all classes -> document inheritance hierarchy"
+
+---
+
+### Integration with Implementation Workflows
+
+#### During Planning
+
+Use codebase-analyzer to inform implementation plans:
+
+```markdown
+## Planning Phase
+- Trace imports from existing entry points to understand current architecture
+- Find all entry points to identify integration points for new feature
+- Analyze structure to find existing patterns to follow
+```
+
+#### During Implementation
+
+Validate as you build:
+
+```markdown
+## Implementation with Continuous Validation
+1. Implement feature in `src/new_feature.py`
+2. Trace imports from new file to verify it integrates correctly
+3. Compare trace against planned architecture - flag deviations
+4. Spawn subagent to document the new module
+```
+
+#### Post-Implementation
+
+Verify completeness and correctness:
+
+```markdown
+## Post-Implementation Validation
+- Trace from entry point to confirm new code is reachable
+- Compare before/after traces to verify no regressions
+- Verify documentation matches actual code paths
+- Audit implementation against spec
+```
+
+---
+
+### Plan Templates
+
+Copy these into your implementation plans to include codebase-analyzer validation.
+
+#### Template: Feature Implementation with Validation
+
+```markdown
+## Implementation Plan: [Feature Name]
+
+### Phase 1: Understand Existing Code
+- Trace imports from [related_entry_point] to map current architecture
+- Find entry points to identify where new feature integrates
+- Document existing patterns to follow
+
+### Phase 2: Implement Feature
+- Create [new_files]
+- Modify [existing_files]
+- Add tests
+
+### Phase 3: Validate Implementation
+- Trace imports from [new_entry_point] to verify dependency tree
+- Compare against planned architecture - flag unexpected dependencies
+- Spawn subagents to document each new module
+- Verify code does what documentation says
+
+### Phase 4: Final Verification
+- Run full trace comparison (before vs after)
+- Confirm no circular dependencies introduced
+- Audit implementation matches original spec
+```
+
+#### Template: Refactoring with Safety Checks
+
+```markdown
+## Refactoring Plan: [Component]
+
+### Pre-Refactor Baseline
+- Trace imports from all entry points that touch [component]
+- Save traces as baseline for comparison
+- Document current dependency graph
+
+### Refactoring Steps
+- [Your refactoring steps here]
+
+### Post-Refactor Validation
+- Trace same entry points after changes
+- Compare new traces against baseline
+- Flag any broken dependencies or unexpected changes
+- Verify all previous functionality still reachable
+```
+
+#### Template: Documentation Generation
+
+```markdown
+## Documentation Plan: [Codebase/Module]
+
+### Discovery
+- Find all entry points in [scope]
+- Trace each entry point to build complete dependency map
+
+### Parallel Documentation
+- Spawn subagents to document each major module:
+  - Module purpose and responsibility
+  - Public API surface
+  - Dependencies (internal and external)
+  - Usage patterns
+
+### Synthesis
+- Compile module docs into architecture overview
+- Generate dependency diagram
+- Identify and document shared utilities
+```
+
+#### Template: Code Audit
+
+```markdown
+## Security/Quality Audit: [Codebase]
+
+### Mapping Phase
+- Find all entry points (main blocks, CLI, web endpoints)
+- Trace each to build complete execution map
+- Identify external dependencies
+
+### Analysis Phase (Parallel Subagents)
+- Subagent 1: Audit external dependencies for known vulnerabilities
+- Subagent 2: Analyze code structure for anti-patterns
+- Subagent 3: Verify code does what comments/docs claim
+- Subagent 4: Check for dead code or unused imports
+
+### Report
+- Compile findings from all subagents
+- Prioritize issues by severity
+- Generate remediation recommendations
+```
+
+---
+
+### Composing with Other Tools and Agents
+
+Codebase-analyzer outputs JSON designed for other tools to consume. Combine with:
+
+#### With Test Runners
+
+> "Trace from main.py, identify all modules, then spawn subagents to verify each has test coverage"
+
+> "Find entry points, trace their dependencies, compare against test files to find untested modules"
+
+#### With Documentation Generators
+
+> "Trace the dependency tree, then for each module spawn a subagent to generate docstrings"
+
+> "Analyze structure to extract all public APIs, then generate API documentation"
+
+#### With Code Review Agents
+
+> "Trace imports from the changed files, spawn review subagents for each affected module"
+
+> "Compare PR branch trace against main branch trace, review all modules that differ"
+
+#### With Security Scanners
+
+> "Trace external dependencies, spawn subagents to check each against vulnerability databases"
+
+> "Audit code paths that handle user input - trace from API endpoints to data stores"
+
+#### With Refactoring Agents
+
+> "Analyze structure to find duplicate code patterns, spawn subagents to propose consolidations"
+
+> "Trace imports to find circular dependencies, propose refactoring to break cycles"
+
+---
+
+### Multi-Agent Coordination Patterns
+
+#### Leader-Worker Pattern
+
+One agent coordinates, workers execute in parallel:
+
+```
+Leader: Find all entry points and categorize by type
+Workers (parallel): Each worker traces one category of entry points
+Leader: Synthesize findings into unified architecture doc
+```
+
+#### Verification Chain
+
+Each agent validates the previous agent's work:
+
+```
+Agent 1: Implement feature
+Agent 2: Trace imports to verify implementation
+Agent 3: Compare trace against spec to verify correctness
+Agent 4: Generate documentation from verified code
+```
+
+#### Competitive Analysis
+
+Multiple agents analyze independently, compare results:
+
+```
+Agent 1: Trace from main.py with default filters
+Agent 2: Trace from main.py with --all flag
+Compare: Identify what the smart filter excluded and why
+```
+
+---
+
+### Example: Full Workflow with Multiple Subagents
+
+Here's a complete example combining planning, implementation, and validation:
+
+```markdown
+## Feature: Add User Authentication
+
+### Phase 1: Discovery (Codebase Analyzer)
+- Find all entry points to identify where auth checks should go
+- Trace from `api/routes.py` to understand current request flow
+- Analyze structure to find existing middleware patterns
+
+### Phase 2: Planning
+Based on analysis:
+- Auth middleware goes in `middleware/auth.py` (follows existing pattern)
+- Session handling in `services/session.py`
+- Integration points: all route handlers in `api/`
+
+### Phase 3: Implementation
+- Implement `middleware/auth.py`
+- Implement `services/session.py`
+- Add auth decorators to routes
+
+### Phase 4: Validation (Parallel Subagents)
+- Subagent A: Trace from each API endpoint to verify auth middleware in path
+- Subagent B: Compare new trace against Phase 1 baseline
+- Subagent C: Verify session handling matches security spec
+- Subagent D: Document new auth flow
+
+### Phase 5: Final Verification
+- All routes now include auth in their trace
+- No unexpected dependencies introduced
+- Documentation accurately reflects implementation
+- Code does what it claims to do
+```
+
 ## What Claude Can Tell You
 
 When you ask Claude to analyze a Python codebase, it can report:
