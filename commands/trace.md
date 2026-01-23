@@ -34,7 +34,7 @@ The script outputs JSON with:
 ## Example
 
 ```bash
-uv run scripts/trace.py /path/to/project/main.py
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py /path/to/project/main.py
 ```
 
 Output:

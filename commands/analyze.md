@@ -41,7 +41,7 @@ The script outputs JSON with:
 
 ### Structure Analysis
 ```bash
-uv run scripts/analyze.py /path/to/project --structure
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py /path/to/project --structure
 ```
 
 Output:
@@ -69,7 +69,7 @@ Output:
 
 ### Pattern Search
 ```bash
-uv run scripts/analyze.py . --pattern "Handler"
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py . --pattern "Handler"
 ```
 
 Output:
