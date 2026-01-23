@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2]
+
+### Added
+
+- `docs/what-runs-on-your-machine.md` - Transparency documentation explaining scripts, data flow, and subprocess calls
+- `docs/security.md` - Security properties summary
+- `AGENTS.md` - Agent context for codebase navigation
+
+### Changed
+
+- Slimmed down README.md with links to detailed docs
+
+## [1.0.1]
+
+### Changed
+
+- Fixed `plugin.json` paths to use `./` prefix (required by Claude Code schema)
+- Simplified README installation instructions to use `--plugin-dir` flag
+- Removed incorrect `"plugins": ["path"]` syntax from documentation
+
 ## [1.0.0]
 
 ### Added

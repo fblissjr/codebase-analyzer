@@ -1,7 +1,7 @@
 {
   "name": "codebase-analyzer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AST-based import tracing and codebase analysis using llmfiles",
-  "skills": ["skills/codebase-analyzer"],
-  "commands": ["commands"]
+  "skills": "./skills/codebase-analyzer",
+  "commands": "./commands"
 }
