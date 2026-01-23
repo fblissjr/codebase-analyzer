@@ -1,12 +1,6 @@
 # Codebase Analyzer
 
-AST-based Python import tracing and codebase analysis. See [what runs on your machine](docs/what-runs-on-your-machine.md).
-
-## Prerequisites
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) package manager
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI (for plugin features)
+A Claude Code plugin for analyzing Python codebases. Ask Claude to trace imports, find entry points, and understand code structure - all without executing the code.
 
 ## Installation
 
@@ -16,41 +10,51 @@ cd codebase-analyzer
 uv sync
 ```
 
-### As Claude Code Plugin
+Then add it to Claude Code:
 
 ```bash
-claude --plugin-dir /path/to/codebase-analyzer
+claude mcp add /path/to/codebase-analyzer
 ```
 
-## Scripts
+## Usage
 
-| Script | Purpose |
-|--------|---------|
-| `trace.py` | Import tracing with dependency graph |
-| `find_entries.py` | Discover entry points (main blocks, CLI commands, web apps) |
-| `analyze.py` | Structure analysis and pattern search |
-| `compare.py` | Compare two import traces |
+Just ask Claude. Examples:
 
-All scripts output JSON to stdout. Use `--log` to also write to `internal/log/`.
+> "I just cloned this repo. Can you tell me where the code starts and what it does?"
 
-```bash
-cd skills/codebase-analyzer
-uv run scripts/trace.py /path/to/main.py
-uv run scripts/find_entries.py /path/to/project
-uv run scripts/analyze.py /path/to/project --structure
-```
+> "I'm not sure the code we wrote yesterday is doing what we think. Can you trace through it and verify?"
+
+> "Compare my implementation against the reference - am I missing anything?"
+
+> "Find all the CLI commands, trace their imports, and summarize what each one does."
+
+See the [Usage Guide](docs/usage.md) for more examples.
+
+## What It Can Do
+
+- **Trace imports** - Follow the dependency graph from any entry point
+- **Find entry points** - Discover main blocks, CLI commands, web apps
+- **Analyze structure** - Extract classes and functions across files
+- **Compare codebases** - Diff two implementations or traces
+- **Search patterns** - Find specific named elements
+
+## Requirements
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+
+## Documentation
+
+- [Usage Guide](docs/usage.md) - How to use it with Claude
+- [What Runs on Your Machine](docs/what-runs-on-your-machine.md) - Transparency
+- [Security](docs/security.md) - Security properties
 
 ## Testing
 
 ```bash
 uv run pytest
 ```
-
-## Documentation
-
-- [What Runs on Your Machine](docs/what-runs-on-your-machine.md) - Transparency documentation
-- [Security](docs/security.md) - Security properties
-- `skills/codebase-analyzer/SKILL.md` - Full skill documentation
 
 ## License
 
