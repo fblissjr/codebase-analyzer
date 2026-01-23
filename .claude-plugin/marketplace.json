@@ -1,4 +1,9 @@
 {
+  "name": "codebase-analyzer-marketplace",
+  "owner": {
+    "name": "fblissjr",
+    "url": "https://github.com/fblissjr"
+  },
   "plugins": [
     {
       "name": "codebase-analyzer",
