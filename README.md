@@ -31,15 +31,6 @@ The recommended way to install persistently:
 /plugin install codebase-analyzer@fblissjr-codebase-analyzer --scope project
 ```
 
-**After installation, run `uv sync` to enable CLI commands:**
-
-```bash
-cd ~/.claude/plugins/marketplaces/codebase-analyzer-marketplace
-uv sync
-```
-
-This makes `codebase-trace`, `codebase-analyze`, `codebase-compare`, and `codebase-find-entries` available globally.
-
 ### Alternative: Manual Configuration
 
 **User-wide** - Add to `~/.claude/settings.json`:

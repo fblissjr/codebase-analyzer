@@ -1,6 +1,7 @@
 ---
 name: codebase-analyzer
 description: AST-based Python codebase analysis. Use when the user wants to trace imports from a file, find entry points, understand codebase architecture, verify code does what they expect, audit untrusted code without executing it, document how code works from an entry point, or compare implementations.
+allowed-tools: Bash(uv:*)
 ---
 
 # Codebase Analyzer
@@ -48,22 +49,22 @@ Use this skill when the user wants to:
 ### Trace Imports
 ```bash
 # Smart filtered trace (recommended)
-codebase-trace main.py
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py
 
 # Full trace (all imports)
-codebase-trace main.py --all
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --all
 
 # With logging
-codebase-trace main.py --log
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --log
 ```
 
 ### Find Entry Points
 ```bash
 # Find all entry points
-codebase-find-entries /path/to/project
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/find_entries.py /path/to/project
 
 # Filter by type
-codebase-find-entries . --types main_block,click_command
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/find_entries.py . --types main_block,click_command
 
 # Available types: main_block, click_command, fastapi, flask, typer, argparse
 ```
@@ -71,22 +72,22 @@ codebase-find-entries . --types main_block,click_command
 ### Analyze Structure
 ```bash
 # Extract classes and functions
-codebase-analyze /path/to/project --structure
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py /path/to/project --structure
 
 # Search for pattern
-codebase-analyze . --pattern "Config"
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py . --pattern "Config"
 
 # Parallel processing
-codebase-analyze . --structure --parallel 4
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py . --structure --parallel 4
 ```
 
 ### Compare Traces
 ```bash
 # Compare two trace files
-codebase-compare trace1.json trace2.json
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/compare.py trace1.json trace2.json
 
 # Trace and compare two entry points
-codebase-compare --entry ref/main.py --entry impl/main.py
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/compare.py --entry ref/main.py --entry impl/main.py
 ```
 
 ## Output Format
@@ -118,7 +119,7 @@ All scripts output JSON to stdout with this structure:
 # Trace multiple entry points in parallel
 entries=("main.py" "cli.py" "api/app.py")
 for entry in "${entries[@]}"; do
-  codebase-trace "$entry" &
+  uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py "$entry" &
 done
 wait
 ```
@@ -126,9 +127,9 @@ wait
 ### Composable Pipeline
 ```bash
 # Find entries -> trace each
-codebase-find-entries . | \
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/find_entries.py . | \
   jq -r '.entry_points[].file' | \
-  xargs -I{} codebase-trace {}
+  xargs -I{} uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py {}
 ```
 
 ## See Also
