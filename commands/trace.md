@@ -18,9 +18,7 @@ Trace all imports starting from an entry file using llmfiles' AST-based import t
 ## Usage
 
 ```bash
-# Run the trace script
-cd ~/utils/codebase-analyzer/skills/codebase-analyzer
-uv run scripts/trace.py {{ entry }}{% if all == "true" %} --all{% endif %}
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py {{ entry }}{% if all == "true" %} --all{% endif %}
 ```
 
 ## Output

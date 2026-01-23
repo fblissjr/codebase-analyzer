@@ -8,7 +8,13 @@ AST-based Python codebase analysis tools for import tracing, entry point detecti
 
 ```
 codebase-analyzer/
+  .claude-plugin/
+    plugin.json            # Plugin registration
+    marketplace.json       # Marketplace config
   skills/codebase-analyzer/
+    SKILL.md               # Skill documentation (with frontmatter)
+    workflows.md           # Workflow guides
+    reference.md           # llmfiles reference
     scripts/               # Main analysis scripts
       trace.py             # Import tracing
       find_entries.py      # Entry point detection
@@ -17,12 +23,24 @@ codebase-analyzer/
       internal/
         output.py          # JSON output utilities
         llmfiles_wrapper.py
-        log/               # Optional output logs (--log flag)
-    SKILL.md               # Skill documentation
-    workflows.md           # Workflow guides
-    reference.md           # llmfiles reference
-  docs/                    # Transparency documentation
+  docs/                    # User documentation
   tests/                   # pytest tests
+```
+
+## Script Invocation
+
+When used as a Claude Code plugin, scripts are invoked via `${CLAUDE_PLUGIN_ROOT}`:
+
+```bash
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/find_entries.py .
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py . --structure
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/compare.py --entry a.py --entry b.py
+```
+
+For local development:
+```bash
+uv run skills/codebase-analyzer/scripts/trace.py main.py
 ```
 
 ## Scripts Overview

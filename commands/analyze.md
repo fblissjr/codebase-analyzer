@@ -26,8 +26,7 @@ Analyze Python codebase structure and search for patterns.
 ## Usage
 
 ```bash
-cd ~/utils/codebase-analyzer/skills/codebase-analyzer
-uv run scripts/analyze.py {{ directory }}{% if pattern %} --pattern "{{ pattern }}"{% endif %}{% if structure == "true" %} --structure{% endif %}{% if parallel != "1" %} --parallel {{ parallel }}{% endif %}
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py {{ directory }}{% if pattern %} --pattern "{{ pattern }}"{% endif %}{% if structure == "true" %} --structure{% endif %}{% if parallel != "1" %} --parallel {{ parallel }}{% endif %}
 ```
 
 ## Output
