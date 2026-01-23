@@ -20,9 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Composing with other tools (test runners, doc generators, code review, security scanners)
   - Multi-agent coordination patterns (leader-worker, verification chain, competitive analysis)
   - Full workflow example with multiple subagents
+- "Real-World Scenario: Documenting a Complex ML Pipeline" - comprehensive example with coordinator pattern validation, multi-entry-point tracing, and gap analysis workflow
 
 ### Changed
 
+- **BREAKING**: Restructured as proper Python package with CLI entry points
+  - Commands now work from anywhere after `uv sync`
+  - `codebase-trace` replaces `uv run scripts/trace.py`
+  - `codebase-analyze` replaces `uv run scripts/analyze.py`
+  - `codebase-compare` replaces `uv run scripts/compare.py`
+  - `codebase-find-entries` replaces `uv run scripts/find_entries.py`
+- Package moved from `skills/codebase-analyzer/scripts/` to `src/codebase_analyzer/`
+- Log directory changed from plugin-relative to `~/.codebase-analyzer/logs/`
 - README.md installation section now shows marketplace commands for persistent installation
 - docs/usage.md fixed incorrect `claude mcp add` to use proper plugin system
 

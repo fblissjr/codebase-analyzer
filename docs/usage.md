@@ -555,6 +555,188 @@ Based on analysis:
 - Code does what it claims to do
 ```
 
+---
+
+## Real-World Scenario: Documenting a Complex ML Pipeline
+
+This example demonstrates using codebase-analyzer to validate documentation scope before writing technical documentation for a complex codebase with multiple entry points and a central coordinator pattern.
+
+### The Situation
+
+You're documenting a Diffusion Transformer (DiT) video generation pipeline with:
+- **Multiple entry points**: `text_to_video.py` (basic) and `text_to_video_hq.py` (high-quality with upsampling)
+- **Central coordinator**: `model_registry.py` that wires together transformers, VAEs, text encoders, and optional components
+- **Deep dependency tree**: The registry imports from 8+ submodules, each with their own dependencies
+
+You've drafted a documentation outline with 8 sections, but before writing thousands of words, you need to verify your outline actually covers what the code does.
+
+### The Challenge
+
+The coordinator pattern is deceptively complex:
+
+```python
+# model_registry.py imports
+from core.loader.weight_manager import WeightManager as Manager
+from core.models.transformer import DiTModel, DiTConfigurator
+from core.models.video_vae import VideoEncoder, VideoDecoder
+from core.models.audio_vae import AudioDecoder, Vocoder
+from core.text_encoders.llm_encoder import LLMTextEncoder
+from core.models.upsampler import LatentUpsampler  # HQ pipeline only?
+from core.loader.lora_utils import LoRAConfig
+```
+
+Questions before documenting:
+- Does the HQ pipeline use all the same components plus upsampler, or is the flow different?
+- Are there modules the registry imports that aren't used by either entry point?
+- Does your 8-section outline cover every module in the actual execution path?
+
+### The Validation Workflow
+
+#### Step 1: Trace Both Entry Points
+
+```markdown
+## Pre-Documentation Validation
+
+### Trace Entry Points
+Trace both pipelines to understand the full dependency trees:
+
+- Trace from `text_to_video.py` with `--all` flag to capture complete dependency tree
+- Trace from `text_to_video_hq.py` with `--all` flag
+- Compare the two traces to identify shared core vs. HQ-specific modules
+```
+
+**Prompt to Claude:**
+> "Trace imports from `pipelines/text_to_video.py` and `pipelines/text_to_video_hq.py`. Compare the traces and tell me which modules are shared between both (the core) versus which are unique to the HQ pipeline."
+
+#### Step 2: Verify the Coordinator Path
+
+The registry is the heart of the system. Verify the import chain exists:
+
+```markdown
+### Verify Critical Paths
+
+Confirm these paths appear in traces:
+
+| Path | Expected |
+|------|----------|
+| Entry → Registry | Both pipelines import `model_registry.py` |
+| Registry → WeightManager | `model_registry.py` → `weight_manager.py` |
+| Registry → Transformer | imports from `core.models.transformer` |
+| Registry → Video VAE | imports from `core.models.video_vae` |
+| Registry → Audio VAE | imports from `core.models.audio_vae` |
+| Registry → Text Encoder | imports from `core.text_encoders` |
+| Registry → Upsampler | imports from `core.models.upsampler` (HQ only?) |
+| Registry → LoRA | imports from `core.loader.lora_utils` |
+```
+
+**Prompt to Claude:**
+> "Verify the traced path from `text_to_video_hq.py` includes: entry point → `model_registry.py` → `weight_manager.py`. List every module that `model_registry.py` imports and confirm each appears in the trace."
+
+#### Step 3: Map Traces to Documentation Sections
+
+Create a mapping table between traced modules and planned documentation:
+
+```markdown
+### Module-to-Section Mapping
+
+| Traced Module | Documentation Section | Status |
+|---------------|----------------------|--------|
+| `model_registry.py` | 5. Model Loading | Covered |
+| `weight_manager.py` | 5.1 Weight Loading | Covered |
+| `transformer.py` | 2. DiT Architecture | Covered |
+| `video_vae.py` | 3. VAE Architecture | Covered |
+| `audio_vae.py` | 3. VAE Architecture | Covered |
+| `llm_encoder.py` | 4. Text Conditioning | Covered |
+| `upsampler.py` | ??? | GAP - needs section |
+| `lora_utils.py` | 5.2 LoRA Integration | Covered |
+| `scheduler.py` | ??? | GAP - not in outline |
+```
+
+**Prompt to Claude:**
+> "Map every file in the trace to my documentation outline. Flag any traced modules that don't have a corresponding section, and any outline sections that don't correspond to traced code."
+
+#### Step 4: Gap Analysis
+
+Before writing documentation, address all gaps:
+
+```markdown
+### Gap Report
+
+**Traced modules missing from documentation:**
+- `core/models/upsampler.py` - Add Section 3.3: Latent Upsampling
+- `core/inference/scheduler.py` - Add Section 6.2: Scheduler
+- `core/loader/quantization.py` - Add to Section 5: FP8 handling
+
+**Documentation sections with no traced code:**
+- Section 7.3: "Multi-GPU Support" - Not found in traces, verify or remove
+
+**Registry factory methods needing documentation:**
+- `registry.transformer()` - Covered in 2.1
+- `registry.video_encoder()` - Covered in 3.1
+- `registry.upsampler()` - NOT COVERED - add section
+```
+
+**Prompt to Claude:**
+> "Based on the gap analysis, which modules appear in the HQ trace but aren't covered by my outline? For each gap, suggest where it should be documented and what the section should cover."
+
+### Complete Validation Prompt
+
+Here's a single comprehensive prompt for this workflow:
+
+> "I'm about to write technical documentation for a DiT video generation pipeline. Before I start, validate my documentation scope:
+>
+> 1. **Trace both entry points** at `pipelines/text_to_video.py` and `pipelines/text_to_video_hq.py` with full dependency trees
+>
+> 2. **Compare traces** to identify:
+>    - Shared modules (core documentation everyone needs)
+>    - HQ-only modules (advanced features section)
+>
+> 3. **Verify the coordinator path**: Both entry points → `model_registry.py` → `weight_manager.py` → all component modules
+>
+> 4. **Map every traced module to my documentation outline** (8 sections covering architecture, text conditioning, inference, model loading, memory optimization)
+>
+> 5. **Output a gap report**:
+>    - Traced modules missing from my outline (need new sections)
+>    - Outline sections with no traced code (verify path or remove)
+>    - Registry factory methods that need explicit documentation
+>
+> **Gate**: Don't let me proceed with writing until gaps are resolved."
+
+### Why This Matters
+
+Without validation, you might:
+- Write 5000 words about the transformer, miss the scheduler entirely
+- Document the upsampler that only HQ uses, confuse basic pipeline users
+- Claim the registry loads models a certain way when the trace shows different paths
+- Miss the quantization module that's critical for memory optimization
+
+The 30 minutes spent on trace validation saves hours of documentation rewrites.
+
+### Outcome
+
+After validation, your documentation structure reflects reality:
+
+```markdown
+## Documentation Structure (Validated)
+
+### Core (Both Pipelines)
+- 1. Overview
+- 2. DiT Transformer Architecture
+- 3. VAE Architecture (Video + Audio)
+- 4. Text Conditioning Pipeline
+- 5. Model Registry & Loading
+- 6. Inference Pipeline
+- 7. Memory Optimization
+
+### HQ Pipeline Additions
+- 8. Two-Stage Generation
+- 8.1 Latent Upsampler (HQ only)
+- 8.2 Refinement LoRA (HQ only)
+
+### Removed (Not in traces)
+- ~~Multi-GPU Support~~ (not implemented yet)
+```
+
 ## What Claude Can Tell You
 
 When you ask Claude to analyze a Python codebase, it can report:
