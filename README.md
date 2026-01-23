@@ -16,17 +16,33 @@ Then add it to Claude Code:
 claude mcp add /path/to/codebase-analyzer
 ```
 
+## How It Works
+
+This plugin extends Claude's capabilities through Claude Code's skill system:
+
+1. **Registration**: The `.claude-plugin/plugin.json` file registers this as a Claude Code plugin
+2. **Skill Loading**: Claude reads `skills/codebase-analyzer/SKILL.md` which contains:
+   - **When to Use**: Triggers that tell Claude when this skill is relevant
+   - **Quick Reference**: Commands Claude can run to analyze your code
+3. **Automatic Activation**: When your prompt matches the triggers (like "understand this codebase" or "trace imports"), Claude knows to use these tools
+
+This means you don't need magic keywords - phrases like "I don't trust this code" or "what does this actually do" will trigger the analyzer because they match the intent-based triggers.
+
+See [How Claude Knows to Use This](docs/usage.md#how-claude-knows-to-use-this) for the full explanation.
+
 ## Usage
 
 Just ask Claude. Examples:
 
 > "I just cloned this repo. Can you tell me where the code starts and what it does?"
 
+> "Document every granular detail of how this code works starting from `main.py`"
+
 > "I'm not sure the code we wrote yesterday is doing what we think. Can you trace through it and verify?"
 
 > "Compare my implementation against the reference - am I missing anything?"
 
-> "Find all the CLI commands, trace their imports, and summarize what each one does."
+> "Trace down from `pipeline.py` and exhaustively analyze every module it touches"
 
 See the [Usage Guide](docs/usage.md) for more examples.
 

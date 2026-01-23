@@ -4,11 +4,39 @@ AST-based import tracing and codebase analysis using llmfiles.
 
 ## When to Use
 
-Use this skill when you need to:
+Use this skill when the user wants to:
+
+**Understand code**
+- Understand how a Python codebase works
+- Figure out what code actually runs when they execute something
+- Learn the architecture of an unfamiliar project
+- See which files matter vs which are dead code
+- Document every granular detail of how code works starting from a file
+- Trace down from an entry point to understand all dependencies
+- Deep dive into a codebase starting at a specific Python file
+- Exhaustively analyze code structure and flow
+
+**Verify and trust code**
+- Verify code is doing what they think it's doing
+- Audit untrusted Python code without executing it
+- Confirm an implementation matches a reference
+- Check if a refactor broke any dependencies
+
+**Debug issues**
+- Debug import or module resolution issues
+- Find why a module isn't being found
+- Trace unexpected behavior to its source
+
+**Analyze structure**
+- Find all entry points in a codebase (main blocks, CLI commands, web apps)
+- Identify what would be affected by a change
+- Find all the ways code can be invoked
+- Compare their implementation to a reference
+
+**Technical operations**
 - Trace Python imports from an entry point
-- Find entry points in a codebase (main blocks, CLI commands, web apps)
 - Analyze codebase structure (classes, functions)
-- Compare two import traces for debugging
+- Compare two import traces
 
 ## Quick Reference
 

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3]
+
+### Added
+
+- User Journeys documentation with branching conversation paths
+- "How Claude Knows to Use This" section explaining plugin mechanism
+- "The Four Modes" summary table (one-and-done, with Claude, with subagents, composable)
+
+### Changed
+
+- Expanded SKILL.md "When to Use" triggers from feature-oriented to intent-oriented
+  - Added "deep documentation from entry point" triggers for granular code analysis requests
+- README.md now includes "How It Works" section explaining plugin registration
+- Restructured usage.md for better discoverability
+
+### Removed
+
+- Direct llmfiles section from usage.md (irrelevant for Claude Code users)
+
 ## [1.0.2]
 
 ### Added
