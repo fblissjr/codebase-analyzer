@@ -1,3 +1,8 @@
+---
+name: codebase-analyzer
+description: AST-based Python codebase analysis. Use when the user wants to trace imports from a file, find entry points, understand codebase architecture, verify code does what they expect, audit untrusted code without executing it, document how code works from an entry point, or compare implementations.
+---
+
 # Codebase Analyzer
 
 AST-based import tracing and codebase analysis using llmfiles.

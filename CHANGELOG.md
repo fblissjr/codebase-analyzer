@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4]
+
+### Added
+
+- SKILL.md YAML frontmatter with `name` and `description` fields (required for automatic skill triggering)
+- `.claude-plugin/marketplace.json` for GitHub-based plugin distribution
+- Installation scope table in docs/usage.md
+
+### Changed
+
+- README.md installation section now shows marketplace commands for persistent installation
+- docs/usage.md fixed incorrect `claude mcp add` to use proper plugin system
+
 ## [1.0.3]
 
 ### Added

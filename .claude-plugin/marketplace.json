@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    {
+      "name": "codebase-analyzer",
+      "description": "AST-based Python codebase analysis - trace imports, find entry points, understand architecture",
+      "source": "./"
+    }
+  ]
+}

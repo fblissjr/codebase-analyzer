@@ -4,15 +4,37 @@ This is a Claude Code plugin. You use it by asking Claude to analyze Python code
 
 ## Installation
 
-```bash
-claude mcp add /path/to/codebase-analyzer
-```
-
-Or start Claude Code with the plugin:
+### Quick Start (per-session)
 
 ```bash
-claude --plugin-dir /path/to/codebase-analyzer
+git clone https://github.com/fblissjr/codebase-analyzer.git ~/claude-plugins/codebase-analyzer
+cd ~/claude-plugins/codebase-analyzer
+uv sync
+
+# Launch Claude Code with the plugin
+claude --plugin-dir ~/claude-plugins/codebase-analyzer
 ```
+
+### Persistent Installation
+
+Use the marketplace for persistent installation:
+
+```bash
+# Inside Claude Code - add repo as marketplace (one-time)
+/plugin marketplace add fblissjr/codebase-analyzer
+
+# Install to your preferred scope
+/plugin install codebase-analyzer@fblissjr-codebase-analyzer --scope user
+```
+
+### Installation Scopes
+
+| Scope | Command | Effect |
+|-------|---------|--------|
+| Per-session | `claude --plugin-dir ./path` | Only for current session |
+| User | `--scope user` | Available in all your projects |
+| Project | `--scope project` | Shared with team (committed to repo) |
+| Local | `--scope local` | Your project only (gitignored) |
 
 ## How Claude Knows to Use This
 

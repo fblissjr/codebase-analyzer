@@ -4,16 +4,49 @@ A Claude Code plugin for analyzing Python codebases. Ask Claude to trace imports
 
 ## Installation
 
+### Development/Testing (per-session)
+
 ```bash
-git clone https://github.com/fblissjr/codebase-analyzer.git
-cd codebase-analyzer
+# Clone and set up
+git clone https://github.com/fblissjr/codebase-analyzer.git ~/claude-plugins/codebase-analyzer
+cd ~/claude-plugins/codebase-analyzer
 uv sync
+
+# Launch Claude Code with the plugin
+claude --plugin-dir ~/claude-plugins/codebase-analyzer
 ```
 
-Then add it to Claude Code:
+### Persistent Installation via Marketplace
+
+The recommended way to install persistently:
 
 ```bash
-claude mcp add /path/to/codebase-analyzer
+# Add this repo as a marketplace (one-time setup, run inside Claude Code)
+/plugin marketplace add fblissjr/codebase-analyzer
+
+# Install to user scope (available in all your projects)
+/plugin install codebase-analyzer@fblissjr-codebase-analyzer --scope user
+
+# Or install to project scope (shared with team via .claude/settings.json)
+/plugin install codebase-analyzer@fblissjr-codebase-analyzer --scope project
+```
+
+### Alternative: Manual Configuration
+
+**User-wide** - Add to `~/.claude/settings.json`:
+
+```json
+{
+  "pluginDirs": ["~/claude-plugins/codebase-analyzer"]
+}
+```
+
+**Per-project** - Add to your project's `.claude/settings.json`:
+
+```json
+{
+  "pluginDirs": ["~/claude-plugins/codebase-analyzer"]
+}
 ```
 
 ## How It Works
