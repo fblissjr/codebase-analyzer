@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1]
+
+### Fixed
+
+- **compare.py v2.0 compatibility**: `normalize_graph()` now handles enriched call_graph dict edges (`{to, module, line}`) alongside legacy string lists
+- **compare.py key lookup**: Reads from `call_graph` key (v2.0 format) with `graph` fallback (v1.x)
+- **compare.py external deps**: Handles both dict format (v2.0: package -> importing files) and list format (v1.x)
+
+### Added
+
+- Pyright LSP usage documentation in README.md and docs/usage.md (installation, available operations, combined workflow examples)
+- `test_graph_diff_v2_format` test for v2.0 compare compatibility
+- `.gitignore` entry for `scripts/internal/log/` trace artifacts
+
 ## [2.0.0]
 
 ### Added

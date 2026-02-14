@@ -517,6 +517,23 @@ class TestCompareTraces:
         result = self.compare(t1, t2)
         assert len(result["graph_diff"]["added_edges"]) > 0 or len(result["graph_diff"]["removed_edges"]) > 0
 
+    def test_graph_diff_v2_format(self):
+        """Test that compare handles v2.0 call_graph with dict edges."""
+        t1 = {
+            "files": ["a.py", "b.py"],
+            "call_graph": {"a.py": [{"to": "b.py", "module": "b", "line": 1}]},
+            "external": {"click": ["a.py"]},
+        }
+        t2 = {
+            "files": ["a.py", "c.py"],
+            "call_graph": {"a.py": [{"to": "c.py", "module": "c", "line": 2}]},
+            "external": {"click": ["a.py"], "flask": ["c.py"]},
+        }
+        result = self.compare(t1, t2)
+        assert len(result["graph_diff"]["added_edges"]) > 0 or len(result["graph_diff"]["removed_edges"]) > 0
+        assert "flask" in result["external_diff"]["only_in_second"]
+        assert "click" in result["external_diff"]["common"]
+
     def test_stats_present(self):
         t1 = {"files": ["a.py"], "graph": {}, "external": []}
         t2 = {"files": ["a.py", "b.py"], "graph": {}, "external": []}

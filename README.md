@@ -85,6 +85,12 @@ Add to your settings.json (user-wide or per-project):
 5. **LSP integration**: For deeper analysis, Claude combines codebase-analyzer output (the map) with pyright LSP queries (semantic details) -- finding references, call hierarchies, and type information for specific symbols
 6. **Interpretation**: Claude synthesizes both sources into architectural narratives, explains findings, and suggests next steps
 
+## Using with Pyright LSP
+
+For the deepest analysis, codebase-analyzer works alongside the [pyright-lsp plugin](https://github.com/anthropics/claude-code-plugins/tree/main/plugins/pyright-lsp). Install pyright (`npm install -g pyright` or `pipx install pyright`), then install the pyright-lsp plugin. Claude will automatically combine both: codebase-analyzer provides the structural map (entry points, import graph, hub modules) while pyright LSP answers semantic questions (who calls this function? what type is this? where is this defined?).
+
+See [docs/usage.md](docs/usage.md) for detailed LSP workflow examples.
+
 ## Requirements
 
 - Python >= 3.11
@@ -94,6 +100,9 @@ Add to your settings.json (user-wide or per-project):
 Dependencies are installed automatically via `uv sync`:
 - `llmfiles` -- AST-based import resolution
 - `orjson` -- JSON serialization
+
+Optional:
+- [pyright](https://github.com/microsoft/pyright) -- For combined AST + LSP analysis (via pyright-lsp plugin)
 
 ## Documentation
 

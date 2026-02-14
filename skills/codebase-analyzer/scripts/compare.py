@@ -91,16 +91,21 @@ def compare_traces(trace1: dict, trace2: dict) -> dict:
     only_in_second = sorted(names2 - names1)
     common = sorted(names1 & names2)
 
-    # Compare graphs
-    graph1 = trace1.get("graph", {})
-    graph2 = trace2.get("graph", {})
+    # Compare graphs (v2.0 uses "call_graph" with dict edges, v1.x used "graph" with string lists)
+    graph1 = trace1.get("call_graph", trace1.get("graph", {}))
+    graph2 = trace2.get("call_graph", trace2.get("graph", {}))
 
     # Normalize graph edges by basename
     def normalize_graph(graph):
         normalized = {}
         for src, deps in graph.items():
             src_name = Path(src).name
-            dep_names = [Path(d).name for d in deps]
+            dep_names = []
+            for d in deps:
+                if isinstance(d, dict):
+                    dep_names.append(Path(d["to"]).name)
+                else:
+                    dep_names.append(Path(d).name)
             normalized[src_name] = set(dep_names)
         return normalized
 
@@ -121,9 +126,11 @@ def compare_traces(trace1: dict, trace2: dict) -> dict:
     added_edges = [list(e) for e in sorted(all_edges2 - all_edges1)]
     removed_edges = [list(e) for e in sorted(all_edges1 - all_edges2)]
 
-    # Compare external dependencies
-    ext1 = set(trace1.get("external", []))
-    ext2 = set(trace2.get("external", []))
+    # Compare external dependencies (v2.0 uses dict mapping package->files, v1.x used list)
+    raw_ext1 = trace1.get("external", [])
+    raw_ext2 = trace2.get("external", [])
+    ext1 = set(raw_ext1.keys()) if isinstance(raw_ext1, dict) else set(raw_ext1)
+    ext2 = set(raw_ext2.keys()) if isinstance(raw_ext2, dict) else set(raw_ext2)
 
     ext_only_first = sorted(ext1 - ext2)
     ext_only_second = sorted(ext2 - ext1)

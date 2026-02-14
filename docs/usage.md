@@ -120,6 +120,84 @@ Uses `--since` to focus on git-modified files within a time window.
 
 Claude uses codebase-analyzer to get the structural map (entry points, import graph, hub modules), then uses pyright LSP for semantic details on specific symbols (find references, call hierarchies, type information). This combination provides both breadth (full codebase structure) and depth (precise semantic queries).
 
+## Using with Pyright LSP
+
+codebase-analyzer provides bulk structural analysis (the map). For semantic precision queries, Claude uses the pyright LSP plugin. Together they cover both breadth and depth.
+
+### Prerequisites
+
+1. Install pyright:
+
+```bash
+npm install -g pyright
+```
+
+Or via pip/pipx:
+
+```bash
+pipx install pyright
+```
+
+2. Install the pyright-lsp plugin for Claude Code. This can be done by adding it to your `~/.claude/settings.json` or project `.claude/settings.json` `pluginDirs`, or by using the official Claude Code plugins repository.
+
+3. Your Python project should have a `pyproject.toml` or `pyrightconfig.json` so pyright can resolve imports correctly.
+
+### What Pyright LSP Provides
+
+Once the pyright-lsp plugin is installed, Claude has access to these LSP operations on any `.py` or `.pyi` file:
+
+| Operation | What It Does | When to Use |
+|-----------|-------------|-------------|
+| `goToDefinition` | Jump to where a symbol is defined | "Where is this class defined?" |
+| `findReferences` | Find all usages of a symbol | "Who calls this function?" |
+| `hover` | Get type info and docstrings for a symbol | "What type does this return?" |
+| `documentSymbol` | List all symbols in a file | "What's in this module?" |
+| `workspaceSymbol` | Search for symbols across the project | "Find all classes named Config" |
+| `goToImplementation` | Find implementations of an interface | "What implements this protocol?" |
+| `incomingCalls` | Find all callers of a function | "What calls this handler?" |
+| `outgoingCalls` | Find all functions called by a function | "What does this function invoke?" |
+
+### Combined Workflows
+
+These workflows show how Claude uses both tools together. You don't need to specify which tool to use -- just describe what you want to know.
+
+**Understand a codebase end-to-end:**
+
+> "I just cloned this repo. Give me the full architecture starting from the entry points."
+
+Claude will: (1) find entry points with `find_entries.py`, (2) trace imports with `trace.py` to get the dependency graph and hub modules, (3) use LSP `documentSymbol` on hub modules to see their contents, (4) use LSP `incomingCalls`/`outgoingCalls` on key functions to map data flow.
+
+**Find all callers of a function:**
+
+> "Who calls the `process_batch` function and what data do they pass?"
+
+Claude will: (1) use `analyze.py --pattern process_batch` to find where it's defined, (2) use LSP `findReferences` to locate all call sites, (3) use LSP `hover` at each call site to see argument types.
+
+**Trace data flow from an endpoint:**
+
+> "When a request hits `/api/generate`, what happens step by step?"
+
+Claude will: (1) trace from the server entry point with `trace.py` to see the module graph, (2) use LSP `goToDefinition` to find the route handler, (3) use LSP `outgoingCalls` recursively to follow the execution path from handler through service layers to data access.
+
+**Audit a refactor:**
+
+> "We moved the config parsing into a new module. Did we break any references?"
+
+Claude will: (1) run `trace.py --since "3 days ago"` to see recently changed files, (2) use LSP `findReferences` on the moved symbols to verify all call sites still resolve, (3) compare the old and new traces with `compare.py` to confirm the dependency graph is intact.
+
+### When Each Tool Wins
+
+| Question | Best Tool |
+|----------|-----------|
+| "What files are in the dependency graph?" | codebase-analyzer `trace.py` |
+| "Where are the entry points?" | codebase-analyzer `find_entries.py` |
+| "What classes and functions exist?" | codebase-analyzer `analyze.py` |
+| "Who calls this specific function?" | pyright LSP `findReferences` or `incomingCalls` |
+| "What type does this return?" | pyright LSP `hover` |
+| "Where is this symbol defined?" | pyright LSP `goToDefinition` |
+| "Show me the full architecture" | Both: codebase-analyzer for the map, LSP for details |
+| "What happens when I run this?" | Both: trace for the graph, LSP for call chains |
+
 ## What to Expect
 
 When you ask for analysis, Claude:
