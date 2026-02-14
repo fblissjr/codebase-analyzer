@@ -1,11 +1,12 @@
 [project]
 name = "codebase-analyzer"
-version = "1.1.0"
+version = "1.2.0"
 description = "AST-based import tracing and codebase analysis"
 requires-python = ">=3.11"
 authors = [{ name = "Fred Bliss" }]
 dependencies = [
     "llmfiles @ git+https://github.com/fblissjr/llmfiles",
+    "orjson>=3.11.7",
 ]
 
 [project.optional-dependencies]

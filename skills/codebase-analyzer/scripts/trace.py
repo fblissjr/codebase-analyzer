@@ -4,7 +4,6 @@
 Usage:
     uv run scripts/trace.py main.py              # Smart filtered
     uv run scripts/trace.py main.py --all        # Full trace
-    uv run scripts/trace.py main.py --json       # JSON to stdout (default)
     uv run scripts/trace.py main.py --log        # Also write to internal/log/
 """
 
@@ -20,6 +19,7 @@ from pathlib import Path
 # Add parent directory to path for internal imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+from internal.llmfiles_wrapper import LlmfilesError, run_llmfiles
 from internal.output import Timer, emit, error_response, success_response
 
 
@@ -125,19 +125,8 @@ def build_dependency_graph(
     all_external = set()
     max_depth = 0
 
-    # Standard library modules to exclude
-    stdlib = {
-        "os", "sys", "re", "json", "ast", "time", "datetime", "pathlib",
-        "collections", "functools", "itertools", "typing", "dataclasses",
-        "logging", "argparse", "subprocess", "shutil", "tempfile", "io",
-        "math", "random", "hashlib", "base64", "urllib", "http", "socket",
-        "threading", "multiprocessing", "concurrent", "asyncio", "contextlib",
-        "copy", "struct", "enum", "abc", "inspect", "importlib",
-        "unittest", "doctest", "pdb", "traceback", "warnings", "weakref",
-        "textwrap", "difflib", "string", "codecs", "unicodedata", "locale",
-        "calendar", "heapq", "bisect", "array", "queue", "types", "operator",
-        "fnmatch", "glob", "linecache", "tokenize", "keyword", "builtins",
-    }
+    # Standard library modules to exclude (Python 3.10+)
+    stdlib = sys.stdlib_module_names
 
     for filepath_str in files:
         filepath = Path(filepath_str)
@@ -189,7 +178,7 @@ def build_dependency_graph(
         for neighbor in graph.get(node, []):
             find_cycles(neighbor, path.copy(), visited)
 
-    for start_node in files[:10]:  # Limit cycle detection to first 10 files
+    for start_node in files:
         find_cycles(start_node, [], set())
 
     stats = {
@@ -228,31 +217,18 @@ def run_trace(entry: str, trace_all: bool = False) -> dict:
         )
 
     # Build llmfiles arguments
-    args = [str(entry_path), "--deps"]
+    llmfiles_args = [str(entry_path), "--deps"]
     if trace_all:
-        args.append("--all")
+        llmfiles_args.append("--all")
 
-    # Run llmfiles via subprocess
-    import subprocess
-
+    # Run llmfiles via wrapper
     try:
-        result = subprocess.run(
-            ["llmfiles"] + args,
-            capture_output=True,
-            text=True,
-            cwd=entry_path.parent,
-        )
-    except FileNotFoundError:
+        result = run_llmfiles(llmfiles_args, cwd=entry_path.parent)
+    except LlmfilesError as e:
         return error_response(
-            "llmfiles not found. Install with: uv add llmfiles",
-            error_type="dependency_missing",
-        )
-
-    if result.returncode != 0:
-        return error_response(
-            f"llmfiles failed: {result.stderr}",
-            error_type="llmfiles_error",
-            details={"returncode": result.returncode, "stderr": result.stderr},
+            str(e),
+            error_type="llmfiles_error" if e.returncode != 127 else "dependency_missing",
+            details={"returncode": e.returncode, "stderr": e.stderr},
         )
 
     # Parse output
@@ -286,12 +262,6 @@ def main():
         action="store_true",
         dest="trace_all",
         help="Trace all imports without smart filtering",
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        default=True,
-        help="Output as JSON (default)",
     )
     parser.add_argument(
         "--log",

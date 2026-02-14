@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+import orjson
 
 # Log directory relative to this file
 LOG_DIR = Path(__file__).parent / "log"
@@ -20,7 +21,7 @@ def emit(data: dict[str, Any], log: bool = False, log_name: str = "operation") -
         log: Whether to also write to log file
         log_name: Prefix for the log filename
     """
-    output = json.dumps(data, indent=2, default=str)
+    output = orjson.dumps(data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS).decode()
     print(output)
 
     if log:
@@ -42,8 +43,8 @@ def write_log(data: dict[str, Any], log_name: str = "operation") -> Path:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     log_file = LOG_DIR / f"{log_name}_{timestamp}.json"
 
-    with open(log_file, "w") as f:
-        json.dump(data, f, indent=2, default=str)
+    with open(log_file, "wb") as f:
+        f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2 | orjson.OPT_NON_STR_KEYS))
 
     return log_file
 

@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+
+### Added
+
+- Interpreting Results section in SKILL.md -- guides Claude on what to DO with analysis output
+- Limitations section in SKILL.md -- clarifies Python-only scope, static analysis boundaries
+- Error Recovery section in SKILL.md -- maps error_type codes to user actions
+- "How Claude Knows to Use This" section in SKILL.md body -- explains plugin registration chain
+- `commands/find-entries.md` -- missing slash command for entry point discovery
+- `commands/compare.md` -- missing slash command for trace comparison
+- `skills/codebase-analyzer/references/` directory for progressive disclosure:
+  - `user-journeys.md` -- conversation-style analysis examples with branching paths
+  - `plan-templates.md` -- copy-paste templates for implementation plans
+- `scripts/internal/file_utils.py` -- shared `find_python_files()` with canonical exclude set
+- 46 unit tests for core functions (`tests/test_core_functions.py`)
+- `orjson` dependency for JSON serialization
+
+### Changed
+
+- SKILL.md description rewritten for better natural-language triggering (~525 chars with intent phrases like "what does this code actually do", "I just cloned this repo")
+- `trace.py` now uses `internal/llmfiles_wrapper.py` instead of inline subprocess calls
+- `trace.py` uses `sys.stdlib_module_names` instead of hardcoded 50+ module set
+- `trace.py` cycle detection no longer limited to first 10 files
+- `find_entries.py` and `analyze.py` use shared `find_python_files()` from `internal/file_utils.py`
+- `internal/output.py` switched from `json` to `orjson` for serialization
+- `compare.py` switched from `json` to `orjson` for JSON loading
+- `workflows.md` moved to `references/workflows.md`
+- `reference.md` moved to `references/llmfiles-reference.md`
+- README.md rewritten with verified installation, real examples, accurate capabilities
+- `docs/usage.md` rewritten as focused usage guide (~135 lines, down from 759)
+- `docs/security.md` rewritten with comprehensive per-script security model
+- `docs/what-runs-on-your-machine.md` rewritten with detailed transparency tables
+- AGENTS.md updated to reflect new directory structure and conventions
+- Existing test for removed `--json` flag updated to test `--log` flag instead
+
+### Removed
+
+- 5 orphaned skill folders: `skills/code-exploration/`, `skills/debugging/`, `skills/documentation/`, `skills/import-tracing/`, `skills/reference-matching/` (never loaded by plugin.json, had invalid frontmatter)
+- No-op `--json` flag from all scripts (JSON is always the output format)
+
 ## [1.1.0]
 
 ### Added

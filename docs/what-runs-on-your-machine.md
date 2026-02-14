@@ -1,77 +1,71 @@
 # What Runs on Your Machine
 
-This document describes what the codebase-analyzer scripts do. Note that these scripts are typically invoked by an LLM, which may have access to other tools and capabilities beyond what's described here.
+last updated: 2026-02-14
 
-## Scripts
+This document describes exactly what the codebase-analyzer scripts do when invoked. These scripts are typically run by Claude Code (an LLM), which may have access to other tools and capabilities beyond what's described here.
 
-| Script | Purpose | Data Accessed |
-|--------|---------|---------------|
-| `trace.py` | Trace imports from entry file | Reads Python files in traced dependency tree |
-| `find_entries.py` | Find entry points (main blocks, CLI commands, web apps) | Reads Python files in specified directory |
-| `analyze.py` | Extract classes/functions, search patterns | Reads Python files in specified directory |
-| `compare.py` | Compare two import traces | Reads JSON files or runs trace on specified files |
+## Scripts Overview
 
-## How the Scripts Work
+| Script | Purpose | Inputs | Outputs | Subprocesses |
+|--------|---------|--------|---------|--------------|
+| `trace.py` | Trace imports from entry file | Python file path | JSON to stdout | `llmfiles` |
+| `find_entries.py` | Find entry points | Directory path | JSON to stdout | None |
+| `analyze.py` | Extract code structure, search patterns | Directory path | JSON to stdout | None |
+| `compare.py` | Compare two traces | Two JSON files or two entry files | JSON to stdout | `trace.py` (when using `--entry`) |
 
-The scripts use Python's `ast.parse()` for static analysis - parsing source code into an Abstract Syntax Tree without executing it. This is the same technique used by linters and IDEs.
-
-```python
-# What happens in the scripts:
-tree = ast.parse(file_content)  # Parse, don't execute
-for node in ast.walk(tree):     # Walk the tree structure
-    # Extract imports, classes, functions, etc.
-```
-
-## External Dependencies
-
-The scripts depend on [`llmfiles`](https://github.com/fblissjr/llmfiles), which also uses AST-based analysis.
-
-## Data Flow (Scripts Only)
+## Data Flow
 
 ```
-File paths you specify
+File/directory paths you specify
         |
         v
-  [AST parsing]
+  [ast.parse() -- static parsing, no execution]
         |
         v
-  JSON to stdout
+  Structured JSON to stdout
 ```
 
-When running just the scripts directly:
-- **Input**: File/directory paths you provide
-- **Processing**: Static AST parsing
-- **Output**: JSON printed to stdout
+No code is executed. No network calls are made. No files are written (unless `--log`).
 
-When invoked by an LLM with other tools available, the LLM may perform additional operations.
+## File Access
 
-## Optional Logging
+### What Gets Read
+- Only `.py` files at paths you explicitly specify (or within directories you specify)
+- For `compare.py` with `--entry`: the two entry files you specify
+- For `compare.py` with positional args: the two JSON trace files you specify
 
-By default, the scripts don't write to disk. With the `--log` flag:
+### What Gets Written
+- **By default**: Nothing. All output goes to stdout
+- **With `--log` flag**: Timestamped JSON files to `scripts/internal/log/` (e.g., `trace_2026-02-14_10-30-45.json`)
 
-- Output is written to `scripts/internal/log/`
-- Log files are timestamped JSON (e.g., `trace_2024-01-15_10-30-45.json`)
-
-## Excluded Directories
-
-These directories are skipped during analysis:
-
-- `.venv`, `venv` - Virtual environments
-- `.git` - Git metadata
-- `__pycache__` - Python cache
-- `node_modules` - Node.js dependencies
-- `.tox`, `.pytest_cache`, `.mypy_cache` - Test/type caches
-- `dist`, `build`, `.eggs`, `*.egg-info` - Build artifacts
+### Directories Excluded from Scanning
+When scanning directories (`find_entries.py`, `analyze.py`), these are always skipped:
+- `.venv`, `venv` -- Virtual environments
+- `.git` -- Git metadata
+- `__pycache__` -- Python bytecode cache
+- `node_modules` -- Node.js dependencies
+- `.tox`, `.pytest_cache`, `.mypy_cache` -- Test/type check caches
+- `dist`, `build`, `.eggs`, `*.egg-info` -- Build artifacts
 
 ## Subprocess Calls
 
-Two scripts spawn subprocesses:
+| Script | Subprocess | Purpose | What It Does |
+|--------|------------|---------|--------------|
+| `trace.py` | `llmfiles <file> --deps` | Import resolution | AST-based import tracing via llmfiles CLI |
+| `compare.py` | `python trace.py <file>` | Generate trace for comparison | Runs trace.py as a subprocess (only with `--entry` flag) |
 
-| Script | Subprocess | Purpose |
-|--------|------------|---------|
-| `trace.py` | `llmfiles` | Dependency resolution |
-| `compare.py` | `trace.py` | Generate traces for comparison |
+`llmfiles` is an AST-based tool that resolves Python imports without executing code. It uses the same `ast.parse()` approach as the other scripts.
+
+## Optional Logging
+
+When any script is run with `--log`:
+- Output is written to `scripts/internal/log/`
+- Files are named `{script}_{timestamp}.json`
+- Contains the same JSON that was printed to stdout
+- No personal data or environment information is logged
 
 ## Important Context
 
-These scripts are designed to be invoked by Claude Code or similar LLM tools. The LLM itself may have broader capabilities (shell access, file writing, network access via other tools). This documentation only describes what the codebase-analyzer scripts themselves do - not what the LLM orchestrating them might do.
+These scripts are designed to be invoked by Claude Code or similar LLM tools. The LLM itself may have broader capabilities (shell access, file writing, network access via other tools). This documentation only describes what the codebase-analyzer scripts themselves do -- not what the LLM orchestrating them might do.
+
+See [security.md](security.md) for the full security model.

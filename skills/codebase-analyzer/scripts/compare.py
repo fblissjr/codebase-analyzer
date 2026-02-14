@@ -9,10 +9,11 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 from pathlib import Path
+
+import orjson
 
 # Add parent directory to path for internal imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -30,10 +31,9 @@ def load_trace(filepath: Path) -> dict | None:
         Parsed trace data or None on error
     """
     try:
-        with open(filepath) as f:
-            data = json.load(f)
+        data = orjson.loads(filepath.read_bytes())
         return data
-    except (FileNotFoundError, json.JSONDecodeError, PermissionError):
+    except (FileNotFoundError, orjson.JSONDecodeError, PermissionError):
         return None
 
 
@@ -57,8 +57,8 @@ def run_trace_for_entry(entry_path: Path) -> dict | None:
             cwd=script_dir,
         )
         if result.returncode == 0:
-            return json.loads(result.stdout)
-    except (subprocess.SubprocessError, json.JSONDecodeError):
+            return orjson.loads(result.stdout)
+    except (subprocess.SubprocessError, orjson.JSONDecodeError):
         pass
     return None
 
@@ -253,12 +253,6 @@ def main():
         action="append",
         dest="entry_files",
         help="Entry files to trace and compare (use twice)",
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        default=True,
-        help="Output as JSON (default)",
     )
     parser.add_argument(
         "--log",

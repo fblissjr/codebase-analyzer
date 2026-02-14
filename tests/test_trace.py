@@ -77,11 +77,11 @@ class TestTraceFlags:
         # Script should run regardless of llmfiles availability
         assert result.returncode in (0, 1)
 
-    def test_trace_json_flag(self):
-        """Test --json flag (default)."""
-        result = run_script("trace.py", str(FIXTURES_DIR / "main.py"), "--json")
+    def test_trace_log_flag(self):
+        """Test --log flag."""
+        result = run_script("trace.py", str(FIXTURES_DIR / "main.py"), "--log")
         assert result.returncode in (0, 1)
-        # Output should be valid JSON
+        # Output should still be valid JSON
         try:
             json.loads(result.stdout)
         except json.JSONDecodeError:

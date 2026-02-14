@@ -19,6 +19,7 @@ from pathlib import Path
 # Add parent directory to path for internal imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+from internal.file_utils import find_python_files
 from internal.output import Timer, emit, error_response, success_response
 
 
@@ -108,26 +109,6 @@ def search_pattern(filepath: Path, pattern: str) -> list[dict]:
                 })
 
     return matches
-
-
-def find_python_files(directory: Path) -> list[Path]:
-    """Find all Python files in directory, excluding common non-source directories."""
-    excluded_dirs = {
-        ".venv", "venv", ".git", "__pycache__", "node_modules",
-        ".tox", ".pytest_cache", ".mypy_cache", "dist", "build",
-        ".eggs",
-    }
-
-    python_files = []
-    for filepath in directory.rglob("*.py"):
-        parts = filepath.parts
-        if any(excluded in parts for excluded in excluded_dirs):
-            continue
-        if any(part.endswith(".egg-info") for part in parts):
-            continue
-        python_files.append(filepath)
-
-    return sorted(python_files)
 
 
 def analyze_file_worker(args: tuple[Path, str | None, bool]) -> dict:
@@ -295,12 +276,6 @@ def main():
         type=int,
         default=1,
         help="Number of parallel workers (default: 1)",
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        default=True,
-        help="Output as JSON (default)",
     )
     parser.add_argument(
         "--log",

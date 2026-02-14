@@ -1,6 +1,6 @@
 ---
 name: codebase-analyzer
-description: AST-based Python codebase analysis. Use when the user wants to trace imports from a file, find entry points, understand codebase architecture, verify code does what they expect, audit untrusted code without executing it, document how code works from an entry point, or compare implementations.
+description: AST-based Python codebase analysis that traces imports, finds entry points, and extracts code structure without executing any code. Use when the user asks to understand how a codebase works, trace what code runs from an entry point, audit or verify untrusted code, find where code starts, compare implementations, document code architecture, or deep dive into a Python project. Handles questions like "what does this code actually do", "I just cloned this repo", "trace down from main.py", "I don't trust this code", or "compare my implementation to the reference".
 allowed-tools: Bash(uv:*)
 ---
 
@@ -112,6 +112,30 @@ All scripts output JSON to stdout with this structure:
 }
 ```
 
+## Interpreting Results
+
+After running analysis:
+- Report total file count and max import depth to summarize scope
+- Identify hub modules (nodes with many graph edges) as architectural focal points
+- Flag circular dependencies as potential design issues needing attention
+- List external dependencies so the user knows third-party requirements
+- For comparisons, highlight files only in one trace as gaps or extras
+- When tracing for verification, confirm the traced path matches user expectations
+
+## Limitations
+
+- Python codebases only. For JavaScript, TypeScript, Go, etc., use standard file exploration
+- Single-file scripts with no imports gain little from tracing -- direct reading is faster
+- Dynamic imports (importlib, __import__) may not be detected even with --all
+- Does not analyze runtime behavior -- only static import structure
+
+### Error Recovery
+- `dependency_missing`: llmfiles not installed. Run `uv add llmfiles`
+- `file_not_found`: Check the file path exists and is accessible
+- `invalid_file_type`: Only .py files can be traced
+- `no_files`: Directory contains no Python files (check path)
+- `llmfiles_error`: llmfiles returned an error -- check stderr in details
+
 ## Subagent Patterns
 
 ### Parallel Tracing
@@ -132,7 +156,27 @@ uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/find_entries.py . 
   xargs -I{} uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py {}
 ```
 
+## How Claude Knows to Use This
+
+The plugin registration chain:
+
+```
+.claude-plugin/plugin.json    # Registers the plugin with Claude Code
+    |
+    v
+skills/codebase-analyzer/SKILL.md    # Defines WHEN to use and HOW to use
+    |
+    +-- "When to Use" section    # Triggers - Claude reads these to decide relevance
+    +-- "Quick Reference"        # Commands - what Claude can actually run
+```
+
+Users don't need magic keywords. The "When to Use" section contains intent-based triggers, so when a user says "I don't trust this code - what does it actually do?", Claude recognizes this matches the verification triggers and activates the analyzer.
+
+Claude interprets the results. The scripts output JSON, but Claude reads and explains the dependency graph, identifies architectural patterns, points out potential issues, and suggests next steps. The JSON output is designed for Claude to consume and reason about, not for users to parse manually.
+
 ## See Also
 
-- `workflows.md` - Detailed workflow guides
-- `reference.md` - Complete llmfiles flag reference
+- `references/workflows.md` - Detailed workflow guides for common analysis tasks
+- `references/llmfiles-reference.md` - Complete llmfiles flag reference
+- `references/user-journeys.md` - Conversation-style analysis examples with branching paths
+- `references/plan-templates.md` - Copy-paste templates for implementation plans

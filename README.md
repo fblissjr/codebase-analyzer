@@ -1,13 +1,23 @@
 # Codebase Analyzer
 
-A Claude Code plugin for analyzing Python codebases. Ask Claude to trace imports, find entry points, and understand code structure - all without executing the code.
+last updated: 2026-02-14
 
-## Installation
+A Claude Code plugin that analyzes Python codebases using AST parsing -- tracing imports, finding entry points, extracting code structure, and comparing implementations. No code execution; all analysis is static and safe.
 
-### Development/Testing (per-session)
+## What It Does
+
+- **Trace imports** -- Follow the dependency graph from any Python entry point, see every file in the execution path
+- **Find entry points** -- Discover main blocks, Click/Typer CLI commands, FastAPI/Flask apps, argparse usage
+- **Analyze structure** -- Extract all classes and functions across a codebase with method signatures
+- **Compare traces** -- Diff two implementations or trace files to find gaps, extras, and structural differences
+- **Search patterns** -- Find classes and functions by name across an entire project
+
+All analysis uses `ast.parse()` (the same technique linters and IDEs use). Your code is never executed. See [docs/security.md](docs/security.md) for details.
+
+## Quick Start
 
 ```bash
-# Clone and set up
+# Clone and install dependencies
 git clone https://github.com/fblissjr/codebase-analyzer.git ~/claude-plugins/codebase-analyzer
 cd ~/claude-plugins/codebase-analyzer
 uv sync
@@ -16,93 +26,83 @@ uv sync
 claude --plugin-dir ~/claude-plugins/codebase-analyzer
 ```
 
-### Persistent Installation via Marketplace
+Then just ask Claude:
 
-The recommended way to install persistently:
+> "I just cloned this repo. Where does the code start and what does it do?"
 
-```bash
-# Add this repo as a marketplace (one-time setup, run inside Claude Code)
-/plugin marketplace add fblissjr/codebase-analyzer
+> "Trace the imports from main.py -- I want to understand the dependency structure."
 
-# Install to user scope (available in all your projects)
-/plugin install codebase-analyzer@fblissjr-codebase-analyzer --scope user
+> "I don't trust this code. Can you analyze what it actually does without running it?"
 
-# Or install to project scope (shared with team via .claude/settings.json)
-/plugin install codebase-analyzer@fblissjr-codebase-analyzer --scope project
-```
+## Installation Methods
 
-### Alternative: Manual Configuration
+| Method | Command | Scope |
+|--------|---------|-------|
+| Per-session | `claude --plugin-dir ~/claude-plugins/codebase-analyzer` | Current session only |
+| User-wide | Add to `~/.claude/settings.json` `pluginDirs` | All your projects |
+| Per-project | Add to `.claude/settings.json` `pluginDirs` | Shared with team |
 
-**User-wide** - Add to `~/.claude/settings.json`:
+### Manual Configuration
 
-```json
-{
-  "pluginDirs": ["~/claude-plugins/codebase-analyzer"]
-}
-```
-
-**Per-project** - Add to your project's `.claude/settings.json`:
+Add to your settings.json (user-wide or per-project):
 
 ```json
 {
   "pluginDirs": ["~/claude-plugins/codebase-analyzer"]
 }
 ```
+
+## Usage Examples
+
+### Understanding a New Codebase
+> "What are all the entry points in this project?"
+
+> "Trace down from `pipeline.py` and exhaustively analyze every module it touches."
+
+> "Document every granular detail of how this code works starting from `main.py`."
+
+### Verifying Code
+> "Compare my implementation against the reference -- am I missing anything?"
+
+> "We refactored the import structure. Can you confirm we didn't break any dependencies?"
+
+### Debugging Imports
+> "Something's wrong with my imports. Can you trace from `app.py` and show me the full dependency graph?"
+
+### Finding Things
+> "Find all the CLI commands in this project."
+
+> "Search for anything with 'Config' in the name across the codebase."
 
 ## How It Works
 
-This plugin extends Claude's capabilities through Claude Code's skill system:
-
-1. **Registration**: The `.claude-plugin/plugin.json` file registers this as a Claude Code plugin
-2. **Skill Loading**: Claude reads `skills/codebase-analyzer/SKILL.md` which contains:
-   - **When to Use**: Triggers that tell Claude when this skill is relevant
-   - **Quick Reference**: Commands Claude can run to analyze your code
-3. **Automatic Activation**: When your prompt matches the triggers (like "understand this codebase" or "trace imports"), Claude knows to use these tools
-
-This means you don't need magic keywords - phrases like "I don't trust this code" or "what does this actually do" will trigger the analyzer because they match the intent-based triggers.
-
-See [How Claude Knows to Use This](docs/usage.md#how-claude-knows-to-use-this) for the full explanation.
-
-## Usage
-
-Just ask Claude. Examples:
-
-> "I just cloned this repo. Can you tell me where the code starts and what it does?"
-
-> "Document every granular detail of how this code works starting from `main.py`"
-
-> "I'm not sure the code we wrote yesterday is doing what we think. Can you trace through it and verify?"
-
-> "Compare my implementation against the reference - am I missing anything?"
-
-> "Trace down from `pipeline.py` and exhaustively analyze every module it touches"
-
-See the [Usage Guide](docs/usage.md) for more examples.
-
-## What It Can Do
-
-- **Trace imports** - Follow the dependency graph from any entry point
-- **Find entry points** - Discover main blocks, CLI commands, web apps
-- **Analyze structure** - Extract classes and functions across files
-- **Compare codebases** - Diff two implementations or traces
-- **Search patterns** - Find specific named elements
+1. **Plugin registration**: `.claude-plugin/plugin.json` registers the plugin with Claude Code
+2. **Skill loading**: Claude reads `skills/codebase-analyzer/SKILL.md` which defines when and how to use the tools
+3. **Automatic activation**: When your prompt matches intent-based triggers (like "understand this codebase" or "trace imports"), Claude activates the analyzer
+4. **Analysis**: Scripts parse your code using `ast.parse()`, with `llmfiles` for import resolution
+5. **Interpretation**: Claude reads the JSON output, explains findings, and suggests next steps
 
 ## Requirements
 
-- Python 3.11+
+- Python >= 3.11
 - [uv](https://docs.astral.sh/uv/)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
+Dependencies are installed automatically via `uv sync`:
+- `llmfiles` -- AST-based import resolution
+- `orjson` -- JSON serialization
+
 ## Documentation
 
-- [Usage Guide](docs/usage.md) - How to use it with Claude
-- [What Runs on Your Machine](docs/what-runs-on-your-machine.md) - Transparency
-- [Security](docs/security.md) - Security properties
+- [Usage Guide](docs/usage.md) -- How to use it with Claude
+- [What Runs on Your Machine](docs/what-runs-on-your-machine.md) -- Full transparency on scripts and data flow
+- [Security](docs/security.md) -- Security model and permissions
 
 ## Testing
 
 ```bash
-uv run pytest
+uv sync --dev
+uv run python -m pytest -v
 ```
 
 ## License

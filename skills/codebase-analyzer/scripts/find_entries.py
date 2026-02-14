@@ -3,8 +3,8 @@
 
 Usage:
     uv run scripts/find_entries.py .
-    uv run scripts/find_entries.py . --types main,click,fastapi
-    uv run scripts/find_entries.py /path/to/project --json
+    uv run scripts/find_entries.py . --types main_block,click_command,fastapi
+    uv run scripts/find_entries.py /path/to/project --log
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from pathlib import Path
 # Add parent directory to path for internal imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+from internal.file_utils import find_python_files
 from internal.output import Timer, emit, error_response, success_response
 
 
@@ -195,27 +196,6 @@ def analyze_file(filepath: Path, types_filter: set[str] | None = None) -> list[d
     return entries
 
 
-def find_python_files(directory: Path) -> list[Path]:
-    """Find all Python files in directory, excluding common non-source directories."""
-    excluded_dirs = {
-        ".venv", "venv", ".git", "__pycache__", "node_modules",
-        ".tox", ".pytest_cache", ".mypy_cache", "dist", "build",
-        ".eggs", "*.egg-info",
-    }
-
-    python_files = []
-    for filepath in directory.rglob("*.py"):
-        # Skip excluded directories
-        parts = filepath.parts
-        if any(excluded in parts for excluded in excluded_dirs):
-            continue
-        if any(part.endswith(".egg-info") for part in parts):
-            continue
-        python_files.append(filepath)
-
-    return sorted(python_files)
-
-
 def run_find_entries(directory: str, types: str | None = None) -> dict:
     """Find entry points in a directory.
 
@@ -292,12 +272,6 @@ def main():
     parser.add_argument(
         "--types",
         help=f"Comma-separated entry types: {', '.join(ENTRY_TYPES.keys())}",
-    )
-    parser.add_argument(
-        "--json",
-        action="store_true",
-        default=True,
-        help="Output as JSON (default)",
     )
     parser.add_argument(
         "--log",

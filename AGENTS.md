@@ -13,18 +13,33 @@ codebase-analyzer/
     marketplace.json       # Marketplace config
   skills/codebase-analyzer/
     SKILL.md               # Skill documentation (with frontmatter)
-    workflows.md           # Workflow guides
-    reference.md           # llmfiles reference
+    references/            # Additional context files
+      workflows.md         # Workflow guides
+      llmfiles-reference.md # llmfiles flag reference
+      user-journeys.md     # Conversation-style examples
+      plan-templates.md    # Copy-paste plan templates
     scripts/               # Main analysis scripts
       trace.py             # Import tracing
       find_entries.py      # Entry point detection
       analyze.py           # Structure analysis
       compare.py           # Trace comparison
       internal/
-        output.py          # JSON output utilities
-        llmfiles_wrapper.py
+        output.py          # JSON output utilities (orjson)
+        llmfiles_wrapper.py # llmfiles CLI wrapper
+        file_utils.py      # Shared file discovery
+  commands/                # Slash command definitions
+    trace.md
+    analyze.md
+    find-entries.md
+    compare.md
+  agents/                  # Agent definitions
+    codebase-explorer.md
   docs/                    # User documentation
+    usage.md
+    security.md
+    what-runs-on-your-machine.md
   tests/                   # pytest tests
+    fixtures/sample_project/
 ```
 
 ## Script Invocation
@@ -69,9 +84,8 @@ Errors use `"status": "error"` with `error_type` and `message` fields.
 ## Testing
 
 ```bash
-uv run pytest
-uv run pytest -v                    # Verbose
-uv run pytest --cov=scripts         # Coverage
+uv sync --dev
+uv run python -m pytest -v
 ```
 
 ## Key Files for Modification
@@ -80,16 +94,20 @@ uv run pytest --cov=scripts         # Coverage
 - **Modify import tracing**: `scripts/trace.py`
 - **Add entry point types**: `scripts/find_entries.py`
 - **Change output format**: `scripts/internal/output.py`
+- **Shared file discovery**: `scripts/internal/file_utils.py`
+- **llmfiles invocation**: `scripts/internal/llmfiles_wrapper.py`
 - **Update skill docs**: `skills/codebase-analyzer/SKILL.md`
 
 ## Dependencies
 
 - `llmfiles` - AST-based import resolution (used by `trace.py`)
+- `orjson` - JSON serialization
 - `pytest` - Testing (dev dependency)
 
 ## Conventions
 
 - All scripts use `argparse` for CLI
 - All scripts support `--log` flag for file output
-- JSON output uses `internal/output.py` utilities
-- Excluded directories defined in each script's `find_python_files()`
+- JSON output uses `internal/output.py` utilities (orjson)
+- File discovery uses `internal/file_utils.py` (shared excluded dirs)
+- llmfiles calls go through `internal/llmfiles_wrapper.py`
