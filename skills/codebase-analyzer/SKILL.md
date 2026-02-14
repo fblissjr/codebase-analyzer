@@ -177,7 +177,7 @@ For deeper understanding, combine codebase-analyzer (bulk structure) with pyrigh
 - `no_files`: Directory contains no Python files (check path)
 - `llmfiles_error`: llmfiles returned an error -- check stderr in details
 
-## Subagent Patterns
+## Pipeline Patterns
 
 ### Parallel Tracing
 ```bash

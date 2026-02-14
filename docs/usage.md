@@ -66,6 +66,20 @@ Just talk to Claude. The plugin activates automatically when your request matche
 
 > "We refactored the import structure. Can you confirm we didn't break any dependencies?"
 
+### Tracing Execution Paths
+
+> "What happens when I call the generate API in web/server.py? Trace the full path from the route handler through model loading and inference."
+
+> "I want to understand the full execution path when the flux2 pipeline runs starting from server.py."
+
+Claude combines codebase-analyzer (forward trace from the entry point, structure search for relevant symbols) with pyright LSP (goToDefinition on the route handler, outgoingCalls to follow the call chain through service layers).
+
+### Reverse Lookups
+
+> "Where is generate.py used? What calls its main functions?"
+
+Forward tracing shows what a file depends on. For the reverse -- who calls this file's functions -- Claude uses pyright LSP's `findReferences` and `incomingCalls` operations.
+
 ### Debugging Import Issues
 
 > "Something's wrong with my imports. Can you trace from app.py and show me the full dependency graph?"

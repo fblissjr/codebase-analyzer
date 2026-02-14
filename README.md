@@ -68,6 +68,11 @@ Add to your settings.json (user-wide or per-project):
 
 > "We refactored the import structure. Can you confirm we didn't break any dependencies?"
 
+### Tracing Execution Paths
+> "What happens when I call the generate API in `web/server.py`? Trace the full path from the route handler through model loading and inference."
+
+> "I want to understand the full execution path when the flux2 pipeline runs starting from `server.py`."
+
 ### Debugging Imports
 > "Something's wrong with my imports. Can you trace from `app.py` and show me the full dependency graph?"
 
@@ -75,6 +80,8 @@ Add to your settings.json (user-wide or per-project):
 > "Find all the CLI commands in this project."
 
 > "Search for anything with 'Config' in the name across the codebase."
+
+> "Where is `generate.py` used? What calls its main functions?"
 
 ## How It Works
 

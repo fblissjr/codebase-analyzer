@@ -43,8 +43,6 @@ codebase-analyzer/
     analyze.md
     find-entries.md
     compare.md
-  agents/                  # Agent definitions
-    codebase-explorer.md
   docs/                    # User documentation
     usage.md
     security.md

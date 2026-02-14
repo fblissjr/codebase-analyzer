@@ -16,16 +16,16 @@ wheels = [
 
 [[package]]
 name = "codebase-analyzer"
-version = "2.0.0"
+version = "2.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "llmfiles" },
     { name = "orjson" },
-    { name = "pyright" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
+    { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
@@ -34,11 +34,14 @@ dev = [
 requires-dist = [
     { name = "llmfiles", git = "https://github.com/fblissjr/llmfiles" },
     { name = "orjson", specifier = ">=3.11.7" },
-    { name = "pyright", specifier = ">=1.1.408" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pyright", specifier = ">=1.1.408" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov" },
+]
 
 [[package]]
 name = "colorama"

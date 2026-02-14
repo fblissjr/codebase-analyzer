@@ -10,7 +10,7 @@ last updated: 2026-02-14
 | Network access | None. Scripts make no network calls |
 | File reads | Only Python files at paths you specify |
 | File writes | None by default. Only with explicit `--log` flag (writes to `scripts/internal/log/`) |
-| Subprocess calls | `trace.py` invokes `llmfiles` (also AST-based). `compare.py` invokes `trace.py` |
+| Subprocess calls | `trace.py` imports llmfiles as a Python library (no subprocess). `compare.py` invokes `trace.py` |
 
 ## How Analysis Works
 
@@ -34,7 +34,7 @@ The analyzed code is never loaded as a module, never imported, and never execute
 ### trace.py
 - **Reads**: The specified Python file and its imports (resolved via AST)
 - **Writes**: Nothing (unless `--log` flag)
-- **Subprocesses**: Calls `llmfiles` CLI for import resolution
+- **Subprocesses**: None (imports llmfiles `CallTracer` as a library; subprocess fallback exists but is not the default path)
 - **Output**: JSON to stdout
 
 ### find_entries.py

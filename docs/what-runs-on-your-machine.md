@@ -8,7 +8,7 @@ This document describes exactly what the codebase-analyzer scripts do when invok
 
 | Script | Purpose | Inputs | Outputs | Subprocesses |
 |--------|---------|--------|---------|--------------|
-| `trace.py` | Trace imports from entry file | Python file path | JSON to stdout | `llmfiles` |
+| `trace.py` | Trace imports from entry file | Python file path | JSON to stdout | None (library import) |
 | `find_entries.py` | Find entry points | Directory path | JSON to stdout | None |
 | `analyze.py` | Extract code structure, search patterns | Directory path | JSON to stdout | None |
 | `compare.py` | Compare two traces | Two JSON files or two entry files | JSON to stdout | `trace.py` (when using `--entry`) |
@@ -51,10 +51,10 @@ When scanning directories (`find_entries.py`, `analyze.py`), these are always sk
 
 | Script | Subprocess | Purpose | What It Does |
 |--------|------------|---------|--------------|
-| `trace.py` | `llmfiles <file> --deps` | Import resolution | AST-based import tracing via llmfiles CLI |
-| `compare.py` | `python trace.py <file>` | Generate trace for comparison | Runs trace.py as a subprocess (only with `--entry` flag) |
+| `trace.py` | None | Import resolution | Imports llmfiles `CallTracer` directly as a Python library (subprocess fallback via `llmfiles_wrapper.py` exists but is not the default path) |
+| `compare.py` | `python trace.py <file>` | Generate trace for comparison | Runs trace.py via `sys.executable` as a subprocess (only with `--entry` flag) |
 
-`llmfiles` is an AST-based tool that resolves Python imports without executing code. It uses the same `ast.parse()` approach as the other scripts.
+`llmfiles` is an AST-based library that resolves Python imports without executing code. It uses the same `ast.parse()` approach as the other scripts.
 
 ## Optional Logging
 

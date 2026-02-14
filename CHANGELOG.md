@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2]
+
+### Removed
+
+- `agents/codebase-explorer.md` and `agents/` directory (used outdated `llmfiles` CLI invocations, duplicated SKILL.md triggers)
+- `pyright` from runtime dependencies (moved to dev dependency group; no script imports it)
+
+### Changed
+
+- CLAUDE.md directory structure updated to reflect agents/ removal
+- `pyproject.toml` uses `[dependency-groups]` for dev dependencies instead of `[project.optional-dependencies]`
+
 ## [2.0.1]
 
 ### Fixed
