@@ -54,6 +54,12 @@ uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py
 # Full trace (all imports)
 uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --all
 
+# Find files containing pattern, then trace their deps
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --grep "generate"
+
+# Only analyze files changed in last week
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --since "7 days ago"
+
 # With logging
 uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --log
 ```
@@ -116,11 +122,46 @@ All scripts output JSON to stdout with this structure:
 
 After running analysis:
 - Report total file count and max import depth to summarize scope
-- Identify hub modules (nodes with many graph edges) as architectural focal points
+- Use `stats.hub_modules` to identify architectural focal points (highest in-degree + out-degree)
 - Flag circular dependencies as potential design issues needing attention
-- List external dependencies so the user knows third-party requirements
+- List external dependencies (now grouped by which files import them)
+- Use `call_graph` edges with line numbers to trace exact import relationships
 - For comparisons, highlight files only in one trace as gaps or extras
 - When tracing for verification, confirm the traced path matches user expectations
+- Use `--structure` output to report inheritance hierarchies, decorators (framework detection), and docstrings
+
+## Combined Analysis with LSP
+
+For deeper understanding, combine codebase-analyzer (bulk structure) with pyright LSP (semantic details). Codebase-analyzer gives you the map; LSP gives you precision queries on specific symbols.
+
+### Workflow: Understand a Codebase
+1. Find entry points: `find_entries.py .`
+2. Trace from main entry: `trace.py main.py`
+3. Identify hub modules from `stats.hub_modules` (highest score = most connected)
+4. Use LSP `goToDefinition` on key classes/functions in hub modules
+5. Use LSP `findReferences` to understand how hubs are used
+6. Synthesize: entry points -> hub modules -> leaf utilities
+
+### Workflow: "Who calls function X?"
+1. Use `analyze.py . --pattern "function_name"` to find where X is defined
+2. Use LSP `findReferences` on X to find all callers
+3. Use LSP `incomingCalls` for the full call chain
+
+### Workflow: Data Flow from Entry Point
+1. Trace from entry: `trace.py server.py`
+2. Use LSP `documentSymbol` on entry file to find main function
+3. Use LSP `outgoingCalls` from main to see what it invokes
+4. Follow chain: for each called function, use `outgoingCalls` recursively
+5. Report: entry -> layer 1 functions -> layer 2 functions -> leaf operations
+
+### When to Use Which Tool
+- "What files are involved?" -> codebase-analyzer `trace.py`
+- "Who calls this function?" -> LSP `findReferences`
+- "What type is this variable?" -> LSP `hover`
+- "Show me the architecture" -> `trace.py` + `analyze.py`, then synthesize
+- "What happens when I run this?" -> `trace.py` first, then LSP call hierarchy
+- "What changed recently?" -> `trace.py --since "1 week ago"`
+- "Where is this pattern used?" -> `trace.py --grep "pattern"`
 
 ## Limitations
 

@@ -7,6 +7,7 @@ import ast
 import sys
 import tempfile
 from pathlib import Path
+from collections import defaultdict
 
 import pytest
 
@@ -170,114 +171,133 @@ class TestTimer:
 
 # --- trace.py core function tests ---
 
-class TestParseLlmfilesOutput:
-    """Tests for parse_llmfiles_output."""
+class TestComputeHubScores:
+    """Tests for compute_hub_scores."""
 
     def setup_method(self):
-        from trace import parse_llmfiles_output
-        self.parse = parse_llmfiles_output
+        from trace import compute_hub_scores
+        self.compute = compute_hub_scores
 
-    def test_file_marker_format(self):
-        output = "--- path/to/a.py ---\ncode\n--- path/to/b.py ---\nmore code"
-        result = self.parse(output, Path("entry.py"))
-        # The parser extracts files from the --- markers
-        file_names = [Path(f).name for f in result["files"]]
-        assert "a.py" in file_names or "b.py" in file_names or len(result["files"]) > 0
+    def test_empty_graph(self):
+        scores = self.compute({})
+        assert scores == []
 
-    def test_hash_marker_format(self):
-        output = "# File: src/main.py\nimport os\n# File: src/utils.py\nhelper()"
-        result = self.parse(output, Path("main.py"))
-        assert len(result["files"]) >= 1
+    def test_single_edge(self):
+        graph = {Path("a.py"): {Path("b.py")}}
+        scores = self.compute(graph)
+        assert len(scores) == 2
+        # a.py has out_degree=1, b.py has in_degree=1
+        files = {s["file"] for s in scores}
+        assert Path("a.py") in files
+        assert Path("b.py") in files
 
-    def test_empty_output(self):
-        result = self.parse("", Path("entry.py"))
-        assert result["files"] == []
+    def test_hub_detection(self):
+        """Hub module should have highest score."""
+        graph = {
+            Path("a.py"): {Path("hub.py")},
+            Path("b.py"): {Path("hub.py")},
+            Path("c.py"): {Path("hub.py")},
+            Path("hub.py"): {Path("d.py"), Path("e.py")},
+        }
+        scores = self.compute(graph)
+        assert scores[0]["file"] == Path("hub.py")
+        assert scores[0]["in_degree"] == 3
+        assert scores[0]["out_degree"] == 2
+        assert scores[0]["score"] == 5
 
-    def test_returns_graph_and_external(self):
-        result = self.parse("--- a.py ---\ncode", Path("a.py"))
-        assert "graph" in result
-        assert "external" in result
-
-
-class TestAnalyzeImportsFromFile:
-    """Tests for analyze_imports_from_file."""
-
-    def setup_method(self):
-        from trace import analyze_imports_from_file
-        self.analyze = analyze_imports_from_file
-
-    def test_standard_import(self, tmp_path):
-        f = tmp_path / "test.py"
-        f.write_text("import os\nimport json\n")
-        local, external = self.analyze(f)
-        assert "os" in external
-        assert "json" in external
-
-    def test_from_import(self, tmp_path):
-        f = tmp_path / "test.py"
-        f.write_text("from pathlib import Path\n")
-        local, external = self.analyze(f)
-        assert "pathlib" in external
-
-    def test_relative_import(self, tmp_path):
-        f = tmp_path / "test.py"
-        f.write_text("from .utils import helper\n")
-        local, external = self.analyze(f)
-        assert "utils" in local
-
-    def test_nonexistent_file(self, tmp_path):
-        f = tmp_path / "missing.py"
-        local, external = self.analyze(f)
-        assert local == []
-        assert external == []
-
-    def test_syntax_error_file(self, tmp_path):
-        f = tmp_path / "bad.py"
-        f.write_text("def broken(\n")
-        local, external = self.analyze(f)
-        assert local == []
-        assert external == []
+    def test_returns_top_5(self):
+        graph = {Path(f"{i}.py"): {Path(f"{i+1}.py")} for i in range(10)}
+        scores = self.compute(graph)
+        assert len(scores) <= 5
 
 
-class TestBuildDependencyGraph:
-    """Tests for build_dependency_graph."""
+class TestDetectCycles:
+    """Tests for detect_cycles."""
 
     def setup_method(self):
-        from trace import build_dependency_graph
-        self.build = build_dependency_graph
+        from trace import detect_cycles
+        self.detect = detect_cycles
 
-    def test_basic_graph(self, tmp_path):
-        # Create two files with an import relationship
-        main = tmp_path / "main.py"
-        main.write_text("from .utils import helper\n")
-        utils = tmp_path / "utils.py"
-        utils.write_text("def helper(): pass\n")
+    def test_no_cycles(self):
+        graph = {Path("a.py"): {Path("b.py")}, Path("b.py"): {Path("c.py")}}
+        cycles = self.detect(graph)
+        assert cycles == []
 
-        graph, external, stats = self.build(
-            main, [str(main), str(utils)], tmp_path
-        )
-        assert "total_files" in stats
-        assert stats["total_files"] == 2
+    def test_simple_cycle(self):
+        graph = {
+            Path("a.py"): {Path("b.py")},
+            Path("b.py"): {Path("a.py")},
+        }
+        cycles = self.detect(graph)
+        assert len(cycles) > 0
 
-    def test_external_deps_exclude_stdlib(self, tmp_path):
+    def test_self_loop(self):
+        graph = {Path("a.py"): {Path("a.py")}}
+        cycles = self.detect(graph)
+        assert len(cycles) > 0
+
+    def test_empty_graph(self):
+        cycles = self.detect({})
+        assert cycles == []
+
+    def test_limits_to_10(self):
+        """Should return at most 10 cycles."""
+        # Create a graph with many small cycles
+        graph = {}
+        for i in range(20):
+            a = Path(f"a{i}.py")
+            b = Path(f"b{i}.py")
+            graph[a] = {b}
+            graph[b] = {a}
+        cycles = self.detect(graph)
+        assert len(cycles) <= 10
+
+
+class TestRunTrace:
+    """Tests for run_trace error handling."""
+
+    def setup_method(self):
+        from trace import run_trace
+        self.run = run_trace
+
+    def test_nonexistent_file(self):
+        result = self.run("/nonexistent/path/file.py")
+        assert result["status"] == "error"
+        assert result["error_type"] == "file_not_found"
+
+    def test_non_python_file(self, tmp_path):
+        f = tmp_path / "test.txt"
+        f.write_text("not python")
+        result = self.run(str(f))
+        assert result["status"] == "error"
+        assert result["error_type"] == "invalid_file_type"
+
+    def test_valid_python_file(self, tmp_path):
         f = tmp_path / "test.py"
-        f.write_text("import os\nimport click\n")
+        f.write_text("import os\nx = 1\n")
+        result = self.run(str(f))
+        # Should succeed (either via library or subprocess)
+        assert "status" not in result or result.get("status") != "error"
 
-        graph, external, stats = self.build(f, [str(f)], tmp_path)
-        assert "os" not in external
-        assert "click" in external
 
-    def test_circular_deps_detected(self, tmp_path):
-        # Two files importing each other
-        a = tmp_path / "a.py"
-        b = tmp_path / "b.py"
-        a.write_text("from .b import x\n")
-        b.write_text("from .a import y\n")
+class TestIsSubpath:
+    """Tests for _is_subpath helper."""
 
-        graph, external, stats = self.build(
-            a, [str(a), str(b)], tmp_path
-        )
-        assert "circular_deps" in stats
+    def setup_method(self):
+        from trace import _is_subpath
+        self.check = _is_subpath
+
+    def test_child_path(self):
+        assert self.check(Path("/a/b/c"), Path("/a/b"))
+
+    def test_same_path(self):
+        assert self.check(Path("/a/b"), Path("/a/b"))
+
+    def test_unrelated_path(self):
+        assert not self.check(Path("/x/y"), Path("/a/b"))
+
+    def test_parent_of_child(self):
+        assert not self.check(Path("/a"), Path("/a/b"))
 
 
 # --- find_entries.py core function tests ---
@@ -380,6 +400,83 @@ class TestExtractStructure:
         f.write_text("class (\n")
         result = self.extract(f)
         assert result is None
+
+    def test_class_inheritance(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("class Child(Parent, Mixin):\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        assert result["classes"][0]["bases"] == ["Parent", "Mixin"]
+
+    def test_class_no_bases(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("class Simple:\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        assert "bases" not in result["classes"][0]
+
+    def test_docstring_extraction(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text('class Foo:\n    """My class docstring."""\n    pass\n')
+        result = self.extract(f)
+        assert result is not None
+        assert result["classes"][0]["docstring"] == "My class docstring."
+
+    def test_function_docstring(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text('def foo():\n    """Does stuff."""\n    pass\n')
+        result = self.extract(f)
+        assert result is not None
+        assert result["functions"][0]["docstring"] == "Does stuff."
+
+    def test_no_docstring(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("def foo():\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        assert "docstring" not in result["functions"][0]
+
+    def test_decorator_extraction(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("@dataclass\nclass Config:\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        assert result["classes"][0]["decorators"] == ["dataclass"]
+
+    def test_function_decorators(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("@app.route('/api')\ndef handler():\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        assert "app.route" in result["functions"][0]["decorators"]
+
+    def test_type_annotations(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("def greet(name: str, age: int) -> str:\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        func = result["functions"][0]
+        assert func["type_hints"]["name"] == "str"
+        assert func["type_hints"]["age"] == "int"
+        assert func["returns"] == "str"
+
+    def test_no_type_hints(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("def foo(x, y):\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        assert "type_hints" not in result["functions"][0]
+        assert "returns" not in result["functions"][0]
+
+    def test_async_function(self, tmp_path):
+        f = tmp_path / "test.py"
+        f.write_text("async def fetch(url: str) -> dict:\n    pass\n")
+        result = self.extract(f)
+        assert result is not None
+        func = result["functions"][0]
+        assert func["name"] == "fetch"
+        assert func["async"] is True
+        assert func["returns"] == "dict"
 
 
 # --- compare.py core function tests ---

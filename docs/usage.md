@@ -93,12 +93,32 @@ Just talk to Claude. The plugin activates automatically when your request matche
 When you ask Claude to analyze a Python codebase, it can report:
 
 - **Entry points** -- Where code execution starts (main blocks, CLI commands, web apps)
-- **Import dependencies** -- What files import what, full dependency trees
-- **Code structure** -- Classes, functions, and their signatures across files
+- **Import dependencies** -- What files import what, with per-edge line numbers and call graph
+- **Hub modules** -- Which files are most connected (highest in-degree + out-degree)
+- **Code structure** -- Classes (with inheritance, decorators, docstrings), functions (with type annotations, return types), async functions
 - **Comparisons** -- Differences between two codebases or traces
 - **Patterns** -- Finding specific named elements across the codebase
+- **Content search** -- Finding files by content pattern and tracing their dependencies
 - **Circular dependencies** -- Import cycles that may indicate design issues
-- **External dependencies** -- Third-party packages used by the code
+- **External dependencies** -- Third-party packages grouped by which files import them
+- **Recent changes** -- Files modified within a git time window
+
+## Advanced Workflows
+
+### Content-Based Discovery
+> "Find all code related to 'generate' and trace its dependencies."
+
+Uses `--grep` to find files by content pattern, then traces their full dependency graph.
+
+### Recent Changes Analysis
+> "What changed in the last week? Trace the recently modified files."
+
+Uses `--since` to focus on git-modified files within a time window.
+
+### Combined AST + LSP Analysis
+> "Show me the full architecture starting from main.py, then drill into the most important modules."
+
+Claude uses codebase-analyzer to get the structural map (entry points, import graph, hub modules), then uses pyright LSP for semantic details on specific symbols (find references, call hierarchies, type information). This combination provides both breadth (full codebase structure) and depth (precise semantic queries).
 
 ## What to Expect
 

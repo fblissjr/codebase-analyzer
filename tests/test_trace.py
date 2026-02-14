@@ -1,4 +1,4 @@
-"""Tests for trace.py script."""
+"""Tests for trace.py script (integration tests via subprocess)."""
 
 import json
 import subprocess
@@ -32,13 +32,16 @@ class TestTraceBasic:
     def test_trace_existing_file(self):
         """Test tracing an existing Python file."""
         result = run_script("trace.py", str(FIXTURES_DIR / "main.py"))
-        # May fail if llmfiles isn't installed, but script should run
+        # Should succeed with library path
         assert result.returncode in (0, 1)
 
         if result.returncode == 0:
             data = json.loads(result.stdout)
             assert data["status"] == "success"
             assert "main.py" in data["entry"]
+            assert "files" in data
+            assert "call_graph" in data
+            assert "stats" in data
 
     def test_trace_nonexistent_file(self):
         """Test tracing a non-existent file."""
@@ -51,7 +54,6 @@ class TestTraceBasic:
 
     def test_trace_non_python_file(self):
         """Test tracing a non-Python file."""
-        # Create a temp non-python file
         import tempfile
         with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             f.write(b"not python")
@@ -74,7 +76,6 @@ class TestTraceFlags:
     def test_trace_all_flag(self):
         """Test --all flag for full trace."""
         result = run_script("trace.py", str(FIXTURES_DIR / "main.py"), "--all")
-        # Script should run regardless of llmfiles availability
         assert result.returncode in (0, 1)
 
     def test_trace_log_flag(self):
@@ -87,12 +88,29 @@ class TestTraceFlags:
         except json.JSONDecodeError:
             pytest.fail("Output is not valid JSON")
 
+    def test_trace_grep_flag(self):
+        """Test --grep flag finds files by content."""
+        result = run_script("trace.py", str(FIXTURES_DIR / "main.py"), "--grep", "def main")
+        assert result.returncode in (0, 1)
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            assert data["status"] == "success"
+            assert "grep_pattern" in data
+
+    def test_trace_since_flag(self):
+        """Test --since flag for git-based filtering."""
+        result = run_script("trace.py", str(FIXTURES_DIR / "main.py"), "--since", "1 year ago")
+        assert result.returncode in (0, 1)
+        # Either succeeds with git data or errors gracefully
+        data = json.loads(result.stdout)
+        assert "status" in data
+
 
 class TestTraceOutput:
     """Test trace.py output structure."""
 
     def test_output_structure(self):
-        """Test that output has expected structure."""
+        """Test that output has expected v2.0 structure."""
         result = run_script("trace.py", str(FIXTURES_DIR / "main.py"))
 
         if result.returncode == 0:
@@ -100,7 +118,19 @@ class TestTraceOutput:
             assert "status" in data
             assert "entry" in data
             assert "files" in data
+            assert "call_graph" in data
+            assert "external" in data
+            assert "stats" in data
             assert "duration_ms" in data
+
+            # Check stats structure
+            stats = data["stats"]
+            assert "total_files" in stats
+            assert "max_depth" in stats
+            assert "circular_deps" in stats
+            assert "parse_errors" in stats
+            assert "skipped_imports" in stats
+            assert "hub_modules" in stats
 
     def test_error_output_structure(self):
         """Test that error output has expected structure."""
@@ -110,3 +140,29 @@ class TestTraceOutput:
         assert data["status"] == "error"
         assert "error_type" in data
         assert "message" in data
+
+    def test_call_graph_edge_format(self):
+        """Test that call_graph edges have the enriched format."""
+        result = run_script("trace.py", str(FIXTURES_DIR / "main.py"))
+
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            call_graph = data.get("call_graph", {})
+            # Call graph values should be lists of dicts with 'to', 'module', 'line'
+            for _src, edges in call_graph.items():
+                assert isinstance(edges, list)
+                for edge in edges:
+                    assert "to" in edge
+                    assert "module" in edge
+                    assert "line" in edge
+
+    def test_external_deps_format(self):
+        """Test that external deps map package -> list of files."""
+        result = run_script("trace.py", str(FIXTURES_DIR / "main.py"))
+
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            external = data.get("external", {})
+            assert isinstance(external, dict)
+            for _pkg, files in external.items():
+                assert isinstance(files, list)

@@ -6,11 +6,13 @@ A Claude Code plugin that analyzes Python codebases using AST parsing -- tracing
 
 ## What It Does
 
-- **Trace imports** -- Follow the dependency graph from any Python entry point, see every file in the execution path
+- **Trace imports** -- Follow the dependency graph from any Python entry point with per-edge line numbers and hub module detection
 - **Find entry points** -- Discover main blocks, Click/Typer CLI commands, FastAPI/Flask apps, argparse usage
-- **Analyze structure** -- Extract all classes and functions across a codebase with method signatures
+- **Analyze structure** -- Extract classes (with inheritance, decorators, docstrings), functions (with type annotations, return types), and async functions
 - **Compare traces** -- Diff two implementations or trace files to find gaps, extras, and structural differences
-- **Search patterns** -- Find classes and functions by name across an entire project
+- **Search by content** -- Find files containing a pattern and trace their dependencies (`--grep`)
+- **Analyze recent changes** -- Focus on files modified in git within a time window (`--since`)
+- **Combined AST + LSP** -- Designed to work alongside pyright LSP for deep semantic analysis
 
 All analysis uses `ast.parse()` (the same technique linters and IDEs use). Your code is never executed. See [docs/security.md](docs/security.md) for details.
 
@@ -79,8 +81,9 @@ Add to your settings.json (user-wide or per-project):
 1. **Plugin registration**: `.claude-plugin/plugin.json` registers the plugin with Claude Code
 2. **Skill loading**: Claude reads `skills/codebase-analyzer/SKILL.md` which defines when and how to use the tools
 3. **Automatic activation**: When your prompt matches intent-based triggers (like "understand this codebase" or "trace imports"), Claude activates the analyzer
-4. **Analysis**: Scripts parse your code using `ast.parse()`, with `llmfiles` for import resolution
-5. **Interpretation**: Claude reads the JSON output, explains findings, and suggests next steps
+4. **Analysis**: `trace.py` imports llmfiles' `CallTracer` directly as a Python library for rich call graph data with per-edge line numbers, hub module detection, and external dependency classification. `analyze.py` extracts class hierarchies, decorators, docstrings, and type annotations via Python's `ast` module
+5. **LSP integration**: For deeper analysis, Claude combines codebase-analyzer output (the map) with pyright LSP queries (semantic details) -- finding references, call hierarchies, and type information for specific symbols
+6. **Interpretation**: Claude synthesizes both sources into architectural narratives, explains findings, and suggests next steps
 
 ## Requirements
 

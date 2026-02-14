@@ -23,6 +23,58 @@ from internal.file_utils import find_python_files
 from internal.output import Timer, emit, error_response, success_response
 
 
+def _get_docstring(node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
+    """Extract docstring from a function or class node."""
+    if not node.body:
+        return None
+    first = node.body[0]
+    if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) and isinstance(first.value.value, str):
+        # Return first line only (summary)
+        return first.value.value.strip().split("\n")[0]
+    return None
+
+
+def _get_decorators(node: ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef) -> list[str]:
+    """Extract decorator names from a class or function node."""
+    decorators = []
+    for dec in node.decorator_list:
+        if isinstance(dec, ast.Name):
+            decorators.append(dec.id)
+        elif isinstance(dec, ast.Attribute):
+            decorators.append(ast.unparse(dec))
+        elif isinstance(dec, ast.Call):
+            if isinstance(dec.func, ast.Name):
+                decorators.append(dec.func.id)
+            elif isinstance(dec.func, ast.Attribute):
+                decorators.append(ast.unparse(dec.func))
+    return decorators
+
+
+def _get_base_classes(node: ast.ClassDef) -> list[str]:
+    """Extract base class names from a class definition."""
+    bases = []
+    for base in node.bases:
+        if isinstance(base, ast.Name):
+            bases.append(base.id)
+        elif isinstance(base, ast.Attribute):
+            bases.append(ast.unparse(base))
+    return bases
+
+
+def _get_type_annotation(arg: ast.arg) -> str | None:
+    """Extract type annotation string from a function argument."""
+    if arg.annotation is None:
+        return None
+    return ast.unparse(arg.annotation)
+
+
+def _get_return_annotation(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
+    """Extract return type annotation from a function definition."""
+    if node.returns is None:
+        return None
+    return ast.unparse(node.returns)
+
+
 def extract_structure(filepath: Path) -> dict | None:
     """Extract classes and functions from a Python file.
 
@@ -45,21 +97,67 @@ def extract_structure(filepath: Path) -> dict | None:
         if isinstance(node, ast.ClassDef):
             methods = []
             for item in node.body:
-                if isinstance(item, ast.FunctionDef):
+                if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    method_info = {"name": item.name}
+                    method_decorators = _get_decorators(item)
+                    if method_decorators:
+                        method_info["decorators"] = method_decorators
                     methods.append(item.name)
-            classes.append({
+
+            class_info: dict = {
                 "name": node.name,
                 "line": node.lineno,
                 "methods": methods,
-            })
-        elif isinstance(node, ast.FunctionDef):
-            # Get parameter names
+            }
+
+            bases = _get_base_classes(node)
+            if bases:
+                class_info["bases"] = bases
+
+            decorators = _get_decorators(node)
+            if decorators:
+                class_info["decorators"] = decorators
+
+            docstring = _get_docstring(node)
+            if docstring:
+                class_info["docstring"] = docstring
+
+            classes.append(class_info)
+
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             params = [arg.arg for arg in node.args.args]
-            functions.append({
+
+            func_info: dict = {
                 "name": node.name,
                 "line": node.lineno,
                 "params": params,
-            })
+            }
+
+            # Add type annotations for params (only if at least one exists)
+            type_hints = {}
+            for arg in node.args.args:
+                ann = _get_type_annotation(arg)
+                if ann:
+                    type_hints[arg.arg] = ann
+            if type_hints:
+                func_info["type_hints"] = type_hints
+
+            ret = _get_return_annotation(node)
+            if ret:
+                func_info["returns"] = ret
+
+            decorators = _get_decorators(node)
+            if decorators:
+                func_info["decorators"] = decorators
+
+            docstring = _get_docstring(node)
+            if docstring:
+                func_info["docstring"] = docstring
+
+            if isinstance(node, ast.AsyncFunctionDef):
+                func_info["async"] = True
+
+            functions.append(func_info)
 
     if not classes and not functions:
         return None

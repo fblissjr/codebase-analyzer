@@ -123,6 +123,61 @@ entries=$(uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/find_ent
 echo "$entries" | xargs -P4 -I{} uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py {} --log
 ```
 
+## Workflow 6: Content-Based Discovery (--grep)
+
+When you need to find all code related to a concept:
+
+### Step 1: Find Files by Content
+```bash
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --grep "generate"
+```
+
+This finds all Python files containing "generate" and traces their dependencies. The output includes `grep_seed_files` (how many files matched) and `grep_pattern`.
+
+### Step 2: Analyze the Results
+The trace shows not just the files containing the pattern, but everything they depend on. This reveals the full scope of code involved with that concept.
+
+## Workflow 7: Recent Changes Analysis (--since)
+
+When reviewing what changed recently:
+
+### Step 1: Trace Recently Modified Files
+```bash
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py --since "7 days ago"
+```
+
+This traces from the entry point but only includes files modified in git within the time window.
+
+### Step 2: Identify Impact
+Compare the filtered trace against a full trace to understand what percentage of the codebase was recently modified.
+
+## Workflow 8: Combined AST + LSP Deep Analysis
+
+For the deepest understanding, combine codebase-analyzer with pyright LSP:
+
+### Step 1: Get the Map (AST)
+```bash
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/trace.py main.py
+uv run ${CLAUDE_PLUGIN_ROOT}/skills/codebase-analyzer/scripts/analyze.py . --structure
+```
+
+### Step 2: Identify Focus Points
+From the trace output, look at `stats.hub_modules` -- these are the most-connected files. Focus LSP queries here for maximum insight.
+
+### Step 3: Deep Dive with LSP
+For each hub module:
+- Use LSP `documentSymbol` to get all symbols in the file
+- Use LSP `findReferences` on key classes to see who uses them
+- Use LSP `incomingCalls` on important functions to trace callers
+- Use LSP `hover` on complex types to understand type information
+
+### Step 4: Synthesize
+Combine the structural map (AST) with semantic details (LSP) to build an architectural narrative:
+- Entry point -> which hub modules it reaches
+- Hub modules -> what they expose and who consumes them
+- Leaf modules -> what utilities/data types they provide
+- External boundaries -> where third-party code is used
+
 ## JSON Output Parsing
 
 All outputs are JSON. Use `jq` for parsing:

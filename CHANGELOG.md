@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0]
+
+### Added
+
+- **Direct llmfiles library integration**: trace.py now imports `CallTracer` directly instead of calling llmfiles as a subprocess, providing richer call graph data with per-edge line numbers
+- **Hub module detection**: trace.py computes hub scores (in-degree + out-degree) and reports top 5 hub modules in stats
+- **`--grep` flag for trace.py**: Find files containing a pattern, then trace their dependencies (uses llmfiles' `grep_files_for_content`)
+- **`--since` flag for trace.py**: Filter traced files to those modified in git within a time window (uses llmfiles' `get_git_modified_files`)
+- **Class inheritance extraction**: analyze.py now reports base classes for each class
+- **Decorator extraction**: analyze.py reports decorators on classes and functions (enables framework detection: `@dataclass`, `@app.route`, etc.)
+- **Docstring extraction**: analyze.py extracts summary line of docstrings for classes and functions
+- **Type annotation extraction**: analyze.py reports parameter type hints and return type annotations
+- **Async function detection**: analyze.py identifies `async def` functions
+- **Combined AST + LSP workflow guidance**: SKILL.md documents how to combine codebase-analyzer with pyright LSP for deep analysis
+- **LSP-aware workflow examples**: references/workflows.md includes content-based discovery, recent changes analysis, and combined AST+LSP deep analysis workflows
+- Unit tests for `compute_hub_scores`, `detect_cycles`, `_is_subpath`, enriched `extract_structure` (inheritance, docstrings, decorators, type hints, async)
+- Integration tests for `--grep` and `--since` flags and enriched output format
+
+### Changed
+
+- **trace.py rewritten**: Removed `parse_llmfiles_output()`, `build_dependency_graph()`, `analyze_imports_from_file()` -- all replaced by direct `CallTracer` library usage
+- **trace.py output format enriched**: `call_graph` now contains per-edge objects with `to`, `module`, `line` fields instead of flat file lists; `external` maps package name to list of importing files; `stats` includes `hub_modules`, `parse_errors`, `skipped_imports`
+- **Subprocess fallback preserved**: llmfiles_wrapper.py kept for environments where library import fails
+- **structlog suppressed**: llmfiles' structlog output redirected to WARNING level to keep stdout clean for JSON
+- CLAUDE.md updated with strategic architecture context (AST + LSP + Claude layers)
+- README.md updated with enriched capability descriptions and AST+LSP synergy explanation
+- docs/usage.md updated with advanced workflows section
+
+### Removed
+
+- `parse_llmfiles_output()` -- fragile regex parsing of llmfiles text output (never matched current formats)
+- `build_dependency_graph()` -- duplicated llmfiles' own graph building
+- `analyze_imports_from_file()` -- redundant AST import analysis
+- Tests for removed functions replaced with tests for new architecture
+
 ## [1.2.0]
 
 ### Added
